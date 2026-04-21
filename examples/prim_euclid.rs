@@ -4,9 +4,9 @@ use std::collections::BinaryHeap;
 use std::fs;
 
 use common::gif_utils::{png_to_gif_frame, setup_gif};
-use common::graphs::{random_euclidean_graph_connected, EuclideanGraph};
+use common::graphs::{EuclideanGraph, random_euclidean_graph_connected};
 use common::rendering::{
-    render_graph_frame, GraphRenderParams, GRAPH_HEIGHT, GRAPH_WIDTH, TITLE_HEIGHT,
+    GRAPH_HEIGHT, GRAPH_WIDTH, GraphRenderParams, TITLE_HEIGHT, render_graph_frame,
 };
 use common::vis::GraphVisState;
 

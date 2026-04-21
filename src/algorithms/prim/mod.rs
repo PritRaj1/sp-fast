@@ -7,7 +7,7 @@ pub use config::PrimConfig;
 use crate::algorithms::heaps::BinaryHeap;
 use crate::algorithms::{MstAlgorithm, MstResult};
 use crate::utils::{FloatNumber, Graph, MstBuffers};
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
+use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 
 /// One-shot Prim's MST.
 pub fn cheeky_prim<T, N, G>(

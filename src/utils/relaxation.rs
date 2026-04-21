@@ -18,7 +18,7 @@ pub fn relax<T: FloatNumber>(
     relax_with(dist, parent, u, dist[u], v, w)
 }
 
-/// Relax with caller-supplied `d_u` — saves one load of `dist[u]`.
+/// Relax with caller-supplied `d_u` (saves one load of `dist[u]`).
 #[inline]
 pub fn relax_with<T: FloatNumber>(
     dist: &mut [T],
@@ -30,6 +30,31 @@ pub fn relax_with<T: FloatNumber>(
 ) -> RelaxResult {
     let new_dist = d_u + w;
     if new_dist < dist[v] {
+        dist[v] = new_dist;
+        parent[v] = u;
+        RelaxResult::Improved
+    } else {
+        RelaxResult::NoChange
+    }
+}
+
+/// Relax conditionally. `gate` is evaluated lazily, only when improved
+#[inline]
+pub fn relax_cond<T, P>(
+    dist: &mut [T],
+    parent: &mut [usize],
+    u: usize,
+    d_u: T,
+    v: usize,
+    w: T,
+    gate: P,
+) -> RelaxResult
+where
+    T: FloatNumber,
+    P: FnOnce() -> bool,
+{
+    let new_dist = d_u + w;
+    if new_dist < dist[v] && gate() {
         dist[v] = new_dist;
         parent[v] = u;
         RelaxResult::Improved

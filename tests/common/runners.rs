@@ -1,4 +1,4 @@
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
+use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 use sssp_fast::{FloatNumber, Graph, SsspAlgorithm, SsspAlgorithmInfo, SsspBuffers, SsspResult};
 
 pub use sssp_fast::cheeky_bellman_ford;

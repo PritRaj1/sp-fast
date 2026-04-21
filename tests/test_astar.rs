@@ -1,7 +1,7 @@
 mod common;
 
 use common::{assertions::EPS_F64 as EPS, *};
-use sssp_fast::{astar_with, cheeky_astar, Heuristic};
+use sssp_fast::{Heuristic, astar_with, cheeky_astar};
 
 fn zero(_v: usize, _target: usize) -> f64 {
     0.0

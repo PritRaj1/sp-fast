@@ -2,7 +2,7 @@
 name = "sssp-fast"
 version = "0.1.0"
 authors = ["PritRaj1 <prithvi@zscc.ai>"]
-edition = "2026"
+edition = "2024"
 license-file = "LICENSE"
 description = "Shortest-path and MST algorithms (Dijkstra, Bellman-Ford, A*, Floyd-Warshall, Prim) over nalgebra-typed buffers with reusable allocations."
 repository = "https://github.com/PritRaj1/sp-fast"

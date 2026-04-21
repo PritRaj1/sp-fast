@@ -1,4 +1,4 @@
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
+use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 use sssp_fast::{ApspBuffers, FloatNumber, SsspBuffers};
 
 pub const EPS_F64: f64 = 1e-10;

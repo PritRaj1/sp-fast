@@ -4,8 +4,8 @@ use std::collections::BinaryHeap;
 use std::fs;
 
 use common::gif_utils::{png_to_gif_frame, setup_gif};
-use common::maps::{maze, GridMap};
-use common::rendering::{render_frame, RenderParams, CELL_SIZE};
+use common::maps::{GridMap, maze};
+use common::rendering::{CELL_SIZE, RenderParams, render_frame};
 use common::vis::VisState;
 
 #[derive(Clone, Copy, PartialEq, Eq)]

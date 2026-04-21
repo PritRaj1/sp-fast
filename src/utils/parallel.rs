@@ -1,6 +1,6 @@
 use crate::algorithms::{SsspAlgorithm, SsspResult};
 use crate::utils::{FloatNumber, Graph, SsspBuffers};
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim, OVector};
+use nalgebra::{DefaultAllocator, Dim, OVector, allocator::Allocator};
 use rayon::prelude::*;
 
 /// Result of multi-source SSSP — one buffer + stats per source.
@@ -47,6 +47,7 @@ where
     T: FloatNumber,
     N: Dim,
     G: Graph<T> + Sync,
+    G::Meta: Sync,
     A: SsspAlgorithm<T, N, G> + Send,
     F: Fn() -> A + Sync,
     DefaultAllocator: Allocator<N>,
@@ -74,12 +75,13 @@ where
     }
 }
 
-/// All-pairs SSSP via single-source from every vertex. O(n · SSSP) time, O(n²) space.
+/// All-pairs SSSP via single-source from every vertex. O(n * SSSP) time, O(n^2) space.
 pub fn all_pairs_sssp<T, N, G, A, F>(graph: &G, algo_factory: F) -> MultiSourceResult<T, N>
 where
     T: FloatNumber,
     N: Dim,
     G: Graph<T> + Sync,
+    G::Meta: Sync,
     A: SsspAlgorithm<T, N, G> + Send,
     F: Fn() -> A + Sync,
     DefaultAllocator: Allocator<N>,

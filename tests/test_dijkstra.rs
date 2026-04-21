@@ -1,7 +1,7 @@
 mod common;
 
 use common::{assertions::EPS_F64 as EPS, *};
-use sssp_fast::{dijkstra_to, AdjListGraph, Dijkstra, SsspAlgorithm};
+use sssp_fast::{AdjListGraph, Dijkstra, SsspAlgorithm, dijkstra_to};
 
 #[test]
 fn test_linear_chain() {

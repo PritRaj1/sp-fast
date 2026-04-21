@@ -1,4 +1,4 @@
-use nalgebra::{allocator::Allocator, Const, DefaultAllocator, Dim, Dyn};
+use nalgebra::{Const, DefaultAllocator, Dim, Dyn, allocator::Allocator};
 use sssp_fast::{ApspBuffers, FloatNumber, MstBuffers, SsspBuffers};
 
 pub fn dynamic<T: FloatNumber>(n: usize) -> SsspBuffers<T, Dyn> {

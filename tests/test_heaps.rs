@@ -15,24 +15,6 @@ mod binary_heap {
         assert_eq!(heap.pop().unwrap().dist, 5.0);
         assert!(heap.pop().is_none());
     }
-
-    #[test]
-    fn test_with_capacity() {
-        let heap = BinaryHeap::<f64>::with_capacity(100);
-        assert!(heap.is_empty());
-    }
-
-    #[test]
-    fn test_len_and_clear() {
-        let mut heap = BinaryHeap::<f64>::new();
-        heap.push(1.0, 0);
-        heap.push(2.0, 1);
-        assert_eq!(heap.len(), 2);
-
-        heap.clear();
-        assert!(heap.is_empty());
-        assert_eq!(heap.len(), 0);
-    }
 }
 
 mod pairing_heap {

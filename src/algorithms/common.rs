@@ -1,5 +1,5 @@
 use crate::utils::{ApspBuffers, FloatNumber, Graph, MstBuffers, SsspBuffers};
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
+use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 
 // =============================================================================
 // Config

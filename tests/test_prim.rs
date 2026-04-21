@@ -3,7 +3,7 @@ mod common;
 use common::assertions::EPS_F64 as EPS;
 use common::*;
 use nalgebra::Const;
-use sssp_fast::{cheeky_prim, AdjListGraph, MstBuffers};
+use sssp_fast::{AdjListGraph, MstBuffers, cheeky_prim};
 
 fn classic_mst_graph() -> AdjListGraph<f64> {
     let mut g = AdjListGraph::new(4);

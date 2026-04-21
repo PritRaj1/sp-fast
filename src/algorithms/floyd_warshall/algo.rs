@@ -4,7 +4,7 @@ use rayon::prelude::*;
 
 use super::config::FloydWarshallConfig;
 
-/// Floyd-Warshall APSP. O(n³) time, O(n²) space. Negative weights OK; cycle detection optional.
+/// Floyd-Warshall APSP. O(n^3) time, O(n^2) space, -ve weights OK; cycle detection optional.
 #[derive(Debug)]
 pub struct FloydWarshall<T: FloatNumber> {
     config: FloydWarshallConfig,
@@ -55,6 +55,7 @@ impl<T, G> ApspAlgorithm<T, G> for FloydWarshall<T>
 where
     T: FloatNumber,
     G: Graph<T> + Sync,
+    G::Meta: Sync,
 {
     fn run(&mut self, graph: &G, buffers: &mut ApspBuffers<T>) -> ApspResult<T> {
         let n = graph.n();
@@ -85,7 +86,7 @@ where
 
     // Take min weight across parallel edges.
     for u in 0..n {
-        graph.for_each_out_edge(u, |v, w| {
+        graph.for_each_out_edge(u, |v, w, _meta| {
             if w < buffers.get(u, v) {
                 buffers.set(u, v, w);
                 buffers.set_next(u, v, v);

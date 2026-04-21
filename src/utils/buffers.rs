@@ -1,5 +1,5 @@
 use super::graph::FloatNumber;
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim, OVector, U1};
+use nalgebra::{DefaultAllocator, Dim, OVector, U1, allocator::Allocator};
 
 /// Sentinel: root or unreachable.
 pub const PARENT_NONE: usize = usize::MAX;

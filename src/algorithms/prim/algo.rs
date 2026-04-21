@@ -1,7 +1,7 @@
 use crate::algorithms::heaps::{BinaryHeap, PriorityQueue};
-use crate::algorithms::{finalize_mst, init_mst, MstAlgorithm, MstAlgorithmInfo, MstResult};
+use crate::algorithms::{MstAlgorithm, MstAlgorithmInfo, MstResult, finalize_mst, init_mst};
 use crate::utils::{FloatNumber, Graph, MstBuffers};
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
+use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 use std::marker::PhantomData;
 
 use super::config::PrimConfig;
@@ -88,7 +88,7 @@ where
             buffers.in_mst[u] = true;
             iterations += 1;
 
-            graph.for_each_out_edge(u, |v, w| {
+            graph.for_each_out_edge(u, |v, w, _meta| {
                 if !buffers.in_mst[v] && w < buffers.key[v] {
                     buffers.key[v] = w;
                     buffers.parent[v] = u;

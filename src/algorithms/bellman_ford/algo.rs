@@ -1,6 +1,6 @@
-use crate::algorithms::{finalize_sssp, init_sssp, SsspAlgorithm, SsspAlgorithmInfo, SsspResult};
+use crate::algorithms::{SsspAlgorithm, SsspAlgorithmInfo, SsspResult, finalize_sssp, init_sssp};
 use crate::utils::{FloatNumber, Graph, SsspBuffers};
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
+use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 use rayon::prelude::*;
 
 use super::config::BellmanFordConfig;
@@ -66,6 +66,7 @@ where
     T: FloatNumber,
     N: Dim,
     G: Graph<T> + Sync,
+    G::Meta: Sync,
     DefaultAllocator: Allocator<N>,
 {
     fn run(&mut self, graph: &G, source: usize, buffers: &mut SsspBuffers<T, N>) -> SsspResult<T> {
@@ -97,6 +98,7 @@ where
     T: FloatNumber,
     N: Dim,
     G: Graph<T> + Sync,
+    G::Meta: Sync,
     DefaultAllocator: Allocator<N>,
 {
     let n = graph.n();
@@ -111,7 +113,7 @@ where
             }
 
             let mut local_proposals = Vec::new();
-            graph.for_each_out_edge(u, |v, w| {
+            graph.for_each_out_edge(u, |v, w, _meta| {
                 let new_dist = d_u + w;
                 if new_dist < dist_slice[v] {
                     local_proposals.push(Proposal {
@@ -154,12 +156,12 @@ where
 
     let mut any_improved = false;
     for (v, opt) in best.into_iter().enumerate() {
-        if let Some(prop) = opt {
-            if prop.dist < buffers.dist[v] {
-                buffers.dist[v] = prop.dist;
-                buffers.parent[v] = prop.parent;
-                any_improved = true;
-            }
+        if let Some(prop) = opt
+            && prop.dist < buffers.dist[v]
+        {
+            buffers.dist[v] = prop.dist;
+            buffers.parent[v] = prop.parent;
+            any_improved = true;
         }
     }
 
@@ -171,6 +173,7 @@ where
     T: FloatNumber,
     N: Dim,
     G: Graph<T> + Sync,
+    G::Meta: Sync,
     DefaultAllocator: Allocator<N>,
 {
     let n = graph.n();
@@ -183,7 +186,7 @@ where
         }
 
         let mut has_cycle = false;
-        graph.for_each_out_edge(u, |v, w| {
+        graph.for_each_out_edge(u, |v, w, _meta| {
             if d_u + w < dist_slice[v] {
                 has_cycle = true;
             }

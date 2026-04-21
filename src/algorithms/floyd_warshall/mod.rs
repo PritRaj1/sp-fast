@@ -12,6 +12,7 @@ pub fn cheeky_floyd_warshall<T, G>(graph: &G, buffers: &mut ApspBuffers<T>) -> A
 where
     T: FloatNumber,
     G: Graph<T> + Sync,
+    G::Meta: Sync,
 {
     FloydWarshall::<T>::new().run(graph, buffers)
 }

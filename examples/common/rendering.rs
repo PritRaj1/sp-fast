@@ -1,6 +1,6 @@
 use plotters::prelude::*;
 
-use super::state::{visited_gradient_rgb, CellState, EdgeState, VertexState};
+use super::state::{CellState, EdgeState, VertexState, visited_gradient_rgb};
 use super::vis::GraphVisState;
 
 // =============================================================================

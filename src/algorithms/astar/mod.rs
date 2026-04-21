@@ -7,7 +7,7 @@ pub use config::{AStarConfig, FnHeuristic, Heuristic, ZeroHeuristic};
 use crate::algorithms::heaps::BinaryHeap;
 use crate::algorithms::{SsspAlgorithm, SsspResult};
 use crate::utils::{FloatNumber, Graph, SsspBuffers};
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
+use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 
 /// One-shot A* with fn-pointer heuristic.
 pub fn cheeky_astar<T, N, G>(

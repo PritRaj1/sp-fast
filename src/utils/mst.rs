@@ -1,5 +1,5 @@
 use super::graph::FloatNumber;
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim, OVector, U1};
+use nalgebra::{DefaultAllocator, Dim, OVector, U1, allocator::Allocator};
 
 pub const MST_PARENT_NONE: usize = usize::MAX;
 

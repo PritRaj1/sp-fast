@@ -7,7 +7,7 @@ pub use config::DijkstraConfig;
 use crate::algorithms::heaps::BinaryHeap;
 use crate::algorithms::{SsspAlgorithm, SsspResult};
 use crate::utils::{FloatNumber, Graph, SsspBuffers};
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
+use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 
 /// One-shot Dijkstra, no early stop.
 pub fn cheeky_dijkstra<T, N, G>(

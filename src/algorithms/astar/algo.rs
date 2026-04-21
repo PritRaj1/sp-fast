@@ -1,8 +1,8 @@
-use crate::algorithms::heaps::{BinaryHeap, PriorityQueue};
 use crate::algorithms::HasSsspConfig;
-use crate::algorithms::{finalize_sssp, init_sssp, SsspAlgorithm, SsspAlgorithmInfo, SsspResult};
-use crate::utils::{relax_with, FloatNumber, Graph, RelaxResult, SsspBuffers};
-use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
+use crate::algorithms::heaps::{BinaryHeap, PriorityQueue};
+use crate::algorithms::{SsspAlgorithm, SsspAlgorithmInfo, SsspResult, finalize_sssp, init_sssp};
+use crate::utils::{FloatNumber, Graph, RelaxResult, SsspBuffers, relax_with};
+use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 use std::marker::PhantomData;
 
 use super::config::{AStarConfig, Heuristic};
@@ -109,7 +109,7 @@ where
 
             iterations += 1;
 
-            graph.for_each_out_edge(u, |v, w| {
+            graph.for_each_out_edge(u, |v, w, _meta| {
                 debug_assert!(w >= T::zero(), "A* requires non-negative weights");
 
                 if let RelaxResult::Improved = relax_with(
