@@ -2,7 +2,8 @@ mod common;
 
 use common::assertions::EPS_F64 as EPS;
 use common::*;
-use sssp_fast::{cheeky_prim, AdjListGraph, Const, MstAlgorithm, MstBuffers, Prim};
+use nalgebra::Const;
+use sssp_fast::{cheeky_prim, AdjListGraph, MstBuffers};
 
 fn classic_mst_graph() -> AdjListGraph<f64> {
     let mut g = AdjListGraph::new(4);
@@ -72,17 +73,6 @@ fn test_grid() {
 
     approx_eq(result.total_weight, 24.0, EPS); // n-1 edges
     assert!(result.is_connected);
-}
-
-#[test]
-fn test_with_fibonacci_heap() {
-    use sssp_fast::FibonacciHeap;
-
-    let g = classic_mst_graph();
-    let mut buf = mst_dynamic(4);
-    let result = Prim::<f64, FibonacciHeap<f64>>::new().run(&g, 0, &mut buf);
-
-    approx_eq(result.total_weight, 7.0, EPS);
 }
 
 #[test]

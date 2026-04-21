@@ -2,19 +2,17 @@
 name = "sssp-fast"
 version = "0.1.0"
 authors = ["PritRaj1 <prithvi@zscc.ai>"]
-edition = "2021"
+edition = "2026"
 license-file = "LICENSE"
-description = "Hybrid Dijkstra/Bellman-Ford algorithm. Deterministic O(m log^(2/3) n)-time single-source shortest path (SSSP)."
-repository = "https://github.com/PritRaj1/Dijkstra-BellmanFord"
-homepage = "https://github.com/PritRaj1/Dijkstra-BellmanFord"
+description = "Shortest-path and MST algorithms (Dijkstra, Bellman-Ford, A*, Floyd-Warshall, Prim) over nalgebra-typed buffers with reusable allocations."
+repository = "https://github.com/PritRaj1/sp-fast"
+homepage = "https://github.com/PritRaj1/sp-fast"
 readme = "README.md"
-keywords = ["math", "optimization"]
+keywords = ["graph", "shortest-path", "dijkstra", "mst", "algorithms"]
 categories = ["algorithms", "science"]
 
 [dependencies]
-ndarray = "0.16.1"
 nalgebra = "0.33.2"
-simba = "0.9.0"
 num-traits = "0.2"
 rayon = "1.10"
 

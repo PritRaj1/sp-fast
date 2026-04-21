@@ -9,7 +9,7 @@ use crate::algorithms::{SsspAlgorithm, SsspResult};
 use crate::utils::{FloatNumber, Graph, SsspBuffers};
 use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
 
-/// One-shot A* execute.
+/// One-shot A* with fn-pointer heuristic.
 pub fn cheeky_astar<T, N, G>(
     graph: &G,
     source: usize,
@@ -27,7 +27,7 @@ where
         .run(graph, source, buffers)
 }
 
-/// One-shot A* with custom heuristic.
+/// One-shot A* with custom heuristic type.
 pub fn astar_with<T, N, G, H>(
     graph: &G,
     source: usize,

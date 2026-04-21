@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 
 use super::config::DijkstraConfig;
 
+/// Dijkstra SSSP. Non-negative weights. Pluggable priority queue.
 #[derive(Debug)]
 pub struct Dijkstra<T: FloatNumber, H: PriorityQueue<T> = BinaryHeap<T>> {
     config: DijkstraConfig,

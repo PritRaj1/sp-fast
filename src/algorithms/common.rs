@@ -5,8 +5,10 @@ use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
 // Config
 // =============================================================================
 
+/// Shared SSSP knobs.
 #[derive(Clone, Debug, Default)]
 pub struct SsspConfig {
+    /// Stop once this vertex is finalised.
     pub early_stop: Option<usize>,
 }
 
@@ -23,6 +25,7 @@ impl SsspConfig {
     }
 }
 
+/// Algorithm configs delegate here for early-stop queries.
 pub trait HasSsspConfig {
     fn sssp_config(&self) -> &SsspConfig;
 
@@ -39,7 +42,7 @@ impl HasSsspConfig for SsspConfig {
 }
 
 // =============================================================================
-// Result
+// Results
 // =============================================================================
 
 #[derive(Clone, Debug)]
@@ -58,6 +61,7 @@ pub struct MstResult<T: FloatNumber> {
     pub is_connected: bool,
 }
 
+/// APSP summary. Distances live in caller's [`ApspBuffers`].
 #[derive(Clone, Debug)]
 pub struct ApspResult<T: FloatNumber> {
     pub iterations: usize,
@@ -124,7 +128,7 @@ where
 }
 
 // =============================================================================
-// Runner
+// Runner helpers
 // =============================================================================
 
 #[inline]
@@ -148,30 +152,20 @@ where
     N: Dim,
     DefaultAllocator: Allocator<N>,
 {
-    let (vertices_reached, total_distance) = compute_sssp_stats(buffers);
+    let mut vertices_reached = 0usize;
+    let mut total_distance = T::zero();
+    for &d in buffers.dist.iter() {
+        if !d.is_infinite() {
+            vertices_reached += 1;
+            total_distance += d;
+        }
+    }
     SsspResult {
         iterations,
         negative_cycle,
         vertices_reached,
         total_distance,
     }
-}
-
-fn compute_sssp_stats<T, N>(buffers: &SsspBuffers<T, N>) -> (usize, T)
-where
-    T: FloatNumber,
-    N: Dim,
-    DefaultAllocator: Allocator<N>,
-{
-    let mut reached = 0usize;
-    let mut total = T::zero();
-    for i in 0..buffers.dist.len() {
-        if !buffers.dist[i].is_infinite() {
-            reached += 1;
-            total += buffers.dist[i];
-        }
-    }
-    (reached, total)
 }
 
 #[inline]
@@ -192,13 +186,10 @@ where
     DefaultAllocator: Allocator<N>,
 {
     let vertices_in_mst = buffers.vertices_in_mst();
-    let total_weight = buffers.total_weight();
-    let is_connected = vertices_in_mst == n;
-
     MstResult {
         iterations,
         vertices_in_mst,
-        total_weight,
-        is_connected,
+        total_weight: buffers.total_weight(),
+        is_connected: vertices_in_mst == n,
     }
 }

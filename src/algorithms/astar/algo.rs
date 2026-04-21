@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 
 use super::config::{AStarConfig, Heuristic};
 
+/// A* search. Admissible heuristic required for optimal paths.
 #[derive(Debug)]
 pub struct AStar<T: FloatNumber, Heur: Heuristic<T>, H: PriorityQueue<T> = BinaryHeap<T>> {
     config: AStarConfig<Heur>,

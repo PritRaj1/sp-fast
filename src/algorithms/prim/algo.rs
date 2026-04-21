@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 
 use super::config::PrimConfig;
 
+/// Prim's MST. Pluggable priority queue. Disconnected graphs yield partial MST.
 #[derive(Debug)]
 pub struct Prim<T: FloatNumber, H: PriorityQueue<T> = BinaryHeap<T>> {
     config: PrimConfig,
@@ -80,21 +81,13 @@ where
             let u = entry.vertex;
             let key_u = entry.dist;
 
-            // Skip if in MST alrdy (lazy deletion)
-            if buffers.in_mst[u] && self.config.lazy_deletion {
+            if self.config.lazy_deletion && (buffers.in_mst[u] || key_u > buffers.key[u]) {
                 continue;
             }
 
-            // Skip stale
-            if self.config.lazy_deletion && key_u > buffers.key[u] {
-                continue;
-            }
-
-            // Add vertex
             buffers.in_mst[u] = true;
             iterations += 1;
 
-            // Relax edges to neighbors not in MST
             graph.for_each_out_edge(u, |v, w| {
                 if !buffers.in_mst[v] && w < buffers.key[v] {
                     buffers.key[v] = w;

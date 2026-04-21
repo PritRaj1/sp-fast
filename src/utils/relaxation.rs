@@ -1,13 +1,12 @@
 use super::graph::FloatNumber;
 
-/// Edge relaxation effect on distance.
 #[derive(Clone, Copy, Debug)]
 pub enum RelaxResult {
     Improved,
     NoChange,
 }
 
-/// Relax an edge (u -> v) with weight w.
+/// Relax edge `u -> v` with weight `w` using `dist[u]`.
 #[inline]
 pub fn relax<T: FloatNumber>(
     dist: &mut [T],
@@ -16,17 +15,10 @@ pub fn relax<T: FloatNumber>(
     v: usize,
     w: T,
 ) -> RelaxResult {
-    let new_dist = dist[u] + w;
-    if new_dist < dist[v] {
-        dist[v] = new_dist;
-        parent[v] = u;
-        RelaxResult::Improved
-    } else {
-        RelaxResult::NoChange
-    }
+    relax_with(dist, parent, u, dist[u], v, w)
 }
 
-/// Relax an edge with known distance from source to u.
+/// Relax with caller-supplied `d_u` — saves one load of `dist[u]`.
 #[inline]
 pub fn relax_with<T: FloatNumber>(
     dist: &mut [T],

@@ -3,6 +3,7 @@ use crate::utils::{FloatNumber, Graph, SsspBuffers};
 use nalgebra::{allocator::Allocator, DefaultAllocator, Dim, OVector};
 use rayon::prelude::*;
 
+/// Result of multi-source SSSP — one buffer + stats per source.
 #[derive(Clone, Debug)]
 pub struct MultiSourceResult<T: FloatNumber, N: Dim>
 where
@@ -36,7 +37,7 @@ where
     }
 }
 
-/// Run SSSP from multiple sources.
+/// Run SSSP from each source in parallel (rayon). Fresh algo instance per source.
 pub fn parallel_sssp<T, N, G, A, F>(
     graph: &G,
     sources: &[usize],
@@ -73,7 +74,7 @@ where
     }
 }
 
-/// All-pairs SSSP. O(n * SSSP) time, O(n^2) space.
+/// All-pairs SSSP via single-source from every vertex. O(n · SSSP) time, O(n²) space.
 pub fn all_pairs_sssp<T, N, G, A, F>(graph: &G, algo_factory: F) -> MultiSourceResult<T, N>
 where
     T: FloatNumber,

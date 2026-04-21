@@ -9,7 +9,7 @@ use crate::algorithms::{SsspAlgorithm, SsspResult};
 use crate::utils::{FloatNumber, Graph, SsspBuffers};
 use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
 
-/// One-shot Dijkstra execute.
+/// One-shot Dijkstra, no early stop.
 pub fn cheeky_dijkstra<T, N, G>(
     graph: &G,
     source: usize,
@@ -24,6 +24,7 @@ where
     Dijkstra::<T, BinaryHeap<T>>::new().run(graph, source, buffers)
 }
 
+/// One-shot Dijkstra with early-stop at `target`.
 pub fn dijkstra_to<T, N, G>(
     graph: &G,
     source: usize,

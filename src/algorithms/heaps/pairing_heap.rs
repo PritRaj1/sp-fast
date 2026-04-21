@@ -45,14 +45,12 @@ fn meld<T: FloatNumber>(
 fn merge_pairs<T: FloatNumber>(mut node: Option<Box<PairNode<T>>>) -> Option<Box<PairNode<T>>> {
     node.as_ref()?;
 
-    // Collect siblings (vec) for two-pass merge
     let mut nodes = Vec::new();
     while let Some(mut n) = node {
         node = n.sibling.take();
         nodes.push(n);
     }
 
-    // First pass: meld pairs left to right
     let mut paired = Vec::with_capacity(nodes.len().div_ceil(2));
     let mut iter = nodes.into_iter();
     while let Some(first) = iter.next() {
@@ -60,7 +58,6 @@ fn merge_pairs<T: FloatNumber>(mut node: Option<Box<PairNode<T>>>) -> Option<Box
         paired.push(meld(Some(first), second));
     }
 
-    // Second pass: meld all from right to left
     paired
         .into_iter()
         .rev()

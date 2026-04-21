@@ -4,6 +4,7 @@ use rayon::prelude::*;
 
 use super::config::FloydWarshallConfig;
 
+/// Floyd-Warshall APSP. O(n³) time, O(n²) space. Negative weights OK; cycle detection optional.
 #[derive(Debug)]
 pub struct FloydWarshall<T: FloatNumber> {
     config: FloydWarshallConfig,
@@ -74,7 +75,6 @@ where
     }
 }
 
-/// Init dist matrix from graph edges.
 fn init_from_graph<T, G>(graph: &G, buffers: &mut ApspBuffers<T>)
 where
     T: FloatNumber,
@@ -83,31 +83,26 @@ where
     let n = graph.n();
     buffers.reset();
 
+    // Take min weight across parallel edges.
     for u in 0..n {
         graph.for_each_out_edge(u, |v, w| {
-            let curr = buffers.get(u, v);
-
-            // Take min in case of parallel edges
-            if w < curr {
+            if w < buffers.get(u, v) {
                 buffers.set(u, v, w);
                 buffers.set_next(u, v, v);
             }
         });
     }
-
-    // Self-loops: next[i][i] = i for path reconstruction
     for i in 0..n {
         buffers.set_next(i, i, i);
     }
 }
 
-/// Update all (i,j) pairs for intermed vertex k.
+/// Relax all (i,j) through intermediate vertex k. Parallel over rows.
 fn update_for_k<T: FloatNumber>(buffers: &mut ApspBuffers<T>, k: usize) {
     let n = buffers.n;
     let row_k: Vec<T> = (0..n).map(|j| buffers.get(k, j)).collect();
     let col_k: Vec<T> = (0..n).map(|i| buffers.get(i, k)).collect();
 
-    // Collect all (i, j) improvements
     let updates: Vec<(usize, usize, T, usize)> = (0..n)
         .into_par_iter()
         .flat_map(|i| {
@@ -115,25 +110,21 @@ fn update_for_k<T: FloatNumber>(buffers: &mut ApspBuffers<T>, k: usize) {
             if d_ik.is_infinite() {
                 return Vec::new();
             }
-
-            let mut local_updates = Vec::new();
+            let next_ik = buffers.get_next(i, k);
+            let mut local = Vec::new();
             for (j, &d_kj) in row_k.iter().enumerate() {
                 if d_kj.is_infinite() {
                     continue;
                 }
-
                 let new_dist = d_ik + d_kj;
-                let curr_dist = buffers.get(i, j);
-                if new_dist < curr_dist {
-                    let next_v = buffers.get_next(i, k);
-                    local_updates.push((i, j, new_dist, next_v));
+                if new_dist < buffers.get(i, j) {
+                    local.push((i, j, new_dist, next_ik));
                 }
             }
-            local_updates
+            local
         })
         .collect();
 
-    // Apply updates
     for (i, j, dist, next_v) in updates {
         buffers.set(i, j, dist);
         buffers.set_next(i, j, next_v);
@@ -145,16 +136,6 @@ fn finalize_apsp<T: FloatNumber>(
     n: usize,
     negative_cycle: bool,
 ) -> ApspResult<T> {
-    let mut pairs_reached = 0usize;
-
-    // Count reachable pairs
-    for i in 0..n {
-        for j in 0..n {
-            if !buffers.get(i, j).is_infinite() {
-                pairs_reached += 1;
-            }
-        }
-    }
-
+    let pairs_reached = buffers.dist.iter().filter(|d| !d.is_infinite()).count();
     ApspResult::new(n, negative_cycle, pairs_reached)
 }

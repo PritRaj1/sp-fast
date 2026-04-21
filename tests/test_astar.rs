@@ -16,9 +16,7 @@ impl Heuristic<f64> for ManhattanHeuristic {
     fn estimate(&self, v: usize, target: usize) -> f64 {
         let (vr, vc) = (v / self.cols, v % self.cols);
         let (tr, tc) = (target / self.cols, target % self.cols);
-        let dr = if vr > tr { vr - tr } else { tr - vr };
-        let dc = if vc > tc { vc - tc } else { tc - vc };
-        (dr + dc) as f64
+        (vr.abs_diff(tr) + vc.abs_diff(tc)) as f64
     }
 }
 

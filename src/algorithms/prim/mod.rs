@@ -9,7 +9,7 @@ use crate::algorithms::{MstAlgorithm, MstResult};
 use crate::utils::{FloatNumber, Graph, MstBuffers};
 use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
 
-/// One-shot Prim's MST execute.
+/// One-shot Prim's MST.
 pub fn cheeky_prim<T, N, G>(
     graph: &G,
     source: usize,

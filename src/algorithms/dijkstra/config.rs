@@ -1,9 +1,10 @@
 use crate::algorithms::{HasSsspConfig, SsspConfig};
 
+/// Dijkstra config. `lazy_deletion` = skip stale heap entries.
 #[derive(Clone, Debug)]
 pub struct DijkstraConfig {
     base: SsspConfig,
-    pub lazy_deletion: bool, // Skip stale entries of heap
+    pub lazy_deletion: bool,
 }
 
 impl Default for DijkstraConfig {

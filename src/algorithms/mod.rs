@@ -13,5 +13,5 @@ pub use bellman_ford::{bellman_ford_to, cheeky_bellman_ford, BellmanFord, Bellma
 pub use common::*;
 pub use dijkstra::{cheeky_dijkstra, dijkstra_to, Dijkstra, DijkstraConfig};
 pub use floyd_warshall::{cheeky_floyd_warshall, FloydWarshall, FloydWarshallConfig};
-pub use heaps::{BinaryHeap, FibonacciHeap, HeapEntry, PairingHeap, PriorityQueue};
+pub use heaps::{BinaryHeap, HeapEntry, PairingHeap, PriorityQueue};
 pub use prim::{cheeky_prim, Prim, PrimConfig};

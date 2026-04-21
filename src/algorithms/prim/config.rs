@@ -1,7 +1,7 @@
-/// Configuration for Prim's MST algorithm.
+/// Prim config. `lazy_deletion` = skip stale heap entries.
 #[derive(Clone, Debug)]
 pub struct PrimConfig {
-    pub lazy_deletion: bool, // Skip stale entries in heap
+    pub lazy_deletion: bool,
 }
 
 impl Default for PrimConfig {

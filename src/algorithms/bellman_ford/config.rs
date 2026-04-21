@@ -1,5 +1,6 @@
 use crate::algorithms::{HasSsspConfig, SsspConfig};
 
+/// Bellman-Ford config. `early_termination` = stop when iter makes no progress.
 #[derive(Clone, Debug)]
 pub struct BellmanFordConfig {
     base: SsspConfig,

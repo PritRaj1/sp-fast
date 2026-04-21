@@ -5,7 +5,7 @@ use rayon::prelude::*;
 
 use super::config::BellmanFordConfig;
 
-/// Proposed edge relax (target vertex, new distance, parent).
+/// Proposed relaxation: (target, new dist, parent).
 #[derive(Clone, Copy)]
 struct Proposal<T: FloatNumber> {
     target: usize,
@@ -13,6 +13,8 @@ struct Proposal<T: FloatNumber> {
     parent: usize,
 }
 
+/// Rayon-parallel Bellman-Ford. Handles negative weights, detects negative cycles.
+/// Propose-then-apply avoids concurrent writes during parallel relaxation.
 #[derive(Debug)]
 pub struct BellmanFord<T: FloatNumber> {
     config: BellmanFordConfig,
@@ -74,7 +76,6 @@ where
         let n = graph.n();
         let mut iterations = 0usize;
 
-        // Relax all edges |V| - 1 times
         for _ in 0..n.saturating_sub(1) {
             iterations += 1;
             let proposals = collect_proposals(graph, buffers);
@@ -91,7 +92,6 @@ where
     }
 }
 
-/// Collect all edge relax proposals.
 fn collect_proposals<T, N, G>(graph: &G, buffers: &SsspBuffers<T, N>) -> Vec<Proposal<T>>
 where
     T: FloatNumber,
@@ -126,7 +126,7 @@ where
         .collect()
 }
 
-/// Apply best per target vertex. Returns true if improved.
+/// Take best proposal per target, commit. Returns true on any improvement.
 fn apply_proposals<T, N>(buffers: &mut SsspBuffers<T, N>, proposals: &[Proposal<T>]) -> bool
 where
     T: FloatNumber,
@@ -138,8 +138,6 @@ where
     }
 
     let n = buffers.dist.len();
-
-    // Group by target, keep best (min dist) per target
     let mut best: Vec<Option<Proposal<T>>> = vec![None; n];
 
     for &prop in proposals {
@@ -154,7 +152,6 @@ where
         }
     }
 
-    // Apply improvements
     let mut any_improved = false;
     for (v, opt) in best.into_iter().enumerate() {
         if let Some(prop) = opt {

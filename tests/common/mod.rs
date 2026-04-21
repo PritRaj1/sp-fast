@@ -1,5 +1,4 @@
-#![allow(dead_code)]
-#![allow(unused_imports)]
+#![allow(dead_code, unused_imports)]
 
 pub mod assertions;
 pub mod buffers;

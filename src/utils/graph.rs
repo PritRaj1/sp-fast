@@ -1,13 +1,11 @@
 use nalgebra::RealField;
 use num_traits::Float;
 
-/// Generic type for weights.
-pub trait FloatNumber: Copy + RealField + Float + std::fmt::Debug + Send + Sync + 'static {}
+/// Scalar weight. `RealField` kept for matrix interop (nalgebra OVector buffers).
+pub trait FloatNumber: RealField + Float + std::fmt::Debug + Send + Sync + 'static {}
 
-impl<T> FloatNumber for T where T: Copy + RealField + Float + std::fmt::Debug + Send + Sync + 'static
-{}
+impl<T> FloatNumber for T where T: RealField + Float + std::fmt::Debug + Send + Sync + 'static {}
 
-/// Weighted directed edge.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Edge<T: FloatNumber> {
     pub to: usize,
@@ -20,12 +18,12 @@ impl<T: FloatNumber> Edge<T> {
     }
 }
 
+/// Read-only graph.
 pub trait Graph<T: FloatNumber> {
     fn n(&self) -> usize;
     fn for_each_out_edge<F: FnMut(usize, T)>(&self, u: usize, f: F);
 }
 
-/// Adjacency list graph.
 #[derive(Clone, Debug)]
 pub struct AdjListGraph<T: FloatNumber> {
     n: usize,

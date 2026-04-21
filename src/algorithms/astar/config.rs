@@ -1,13 +1,12 @@
 use crate::algorithms::{HasSsspConfig, SsspConfig};
 use crate::utils::FloatNumber;
 
-/// Heuristic func for A*.
-/// Must be admissible (never overestimate) for optimality.
+/// A* heuristic. Must be admissible (never overestimates) for optimal paths.
 pub trait Heuristic<T: FloatNumber>: Clone {
     fn estimate(&self, vertex: usize, target: usize) -> T;
 }
 
-/// Zero heuristic, (maps A* to Dijkstra).
+/// Zero heuristic — reduces A* to Dijkstra.
 #[derive(Clone, Debug, Default)]
 pub struct ZeroHeuristic;
 
@@ -18,7 +17,7 @@ impl<T: FloatNumber> Heuristic<T> for ZeroHeuristic {
     }
 }
 
-/// Function pointer heuristic wrapper.
+/// Wraps a plain function pointer as a `Heuristic`.
 #[derive(Clone)]
 pub struct FnHeuristic<T: FloatNumber> {
     f: fn(usize, usize) -> T,
@@ -37,6 +36,7 @@ impl<T: FloatNumber> Heuristic<T> for FnHeuristic<T> {
     }
 }
 
+/// A* config. `lazy_deletion` = skip stale heap entries.
 #[derive(Clone, Debug)]
 pub struct AStarConfig<H> {
     base: SsspConfig,

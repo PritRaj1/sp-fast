@@ -8,7 +8,7 @@ use crate::algorithms::{SsspAlgorithm, SsspResult};
 use crate::utils::{FloatNumber, Graph, SsspBuffers};
 use nalgebra::{allocator::Allocator, DefaultAllocator, Dim};
 
-/// One-shot Bellman-Ford execute.
+/// One-shot Bellman-Ford, no early stop.
 pub fn cheeky_bellman_ford<T, N, G>(
     graph: &G,
     source: usize,
@@ -23,6 +23,7 @@ where
     BellmanFord::<T>::new().run(graph, source, buffers)
 }
 
+/// One-shot Bellman-Ford with early-stop at `target`.
 pub fn bellman_ford_to<T, N, G>(
     graph: &G,
     source: usize,

@@ -1,3 +1,4 @@
+/// Floyd-Warshall config. `detect_negative_cycle` costs one diagonal scan.
 #[derive(Clone, Debug, Default)]
 pub struct FloydWarshallConfig {
     pub detect_negative_cycle: bool,
