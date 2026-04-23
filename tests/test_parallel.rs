@@ -1,8 +1,7 @@
 mod common;
 
 use common::{assertions::EPS_F64 as EPS, *};
-use nalgebra::Dyn;
-use sssp_fast::{BinaryHeap, Dijkstra, parallel_sssp};
+use sssp_fast::{BinaryHeap, Dijkstra, Dyn, parallel_sssp};
 
 #[test]
 fn test_multi_source_distances() {

@@ -55,11 +55,11 @@ pub fn png_to_gif_frame(
         indexed_pixels.push(find_closest_color(&rgb, &palette));
     }
 
-    let mut frame = Frame::default();
-    frame.width = width;
-    frame.height = height;
-    frame.buffer = std::borrow::Cow::Owned(indexed_pixels);
-    frame.delay = FRAME_DELAY;
-
-    Ok(frame)
+    Ok(Frame {
+        width,
+        height,
+        buffer: std::borrow::Cow::Owned(indexed_pixels),
+        delay: FRAME_DELAY,
+        ..Frame::default()
+    })
 }

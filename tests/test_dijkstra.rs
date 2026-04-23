@@ -7,7 +7,7 @@ use sssp_fast::{AdjListGraph, Dijkstra, SsspAlgorithm, dijkstra_to};
 fn test_linear_chain() {
     let g = linear(5, 1.0);
     let mut buf = dynamic(5);
-    cheeky_dijkstra(&g, 0, &mut buf);
+    dijkstra(&g, 0, &mut buf);
 
     for i in 0..5 {
         dist_eq(&buf, i, i as f64, EPS);
@@ -18,7 +18,7 @@ fn test_linear_chain() {
 fn test_diamond_selects_shortest() {
     let (g, optimal) = diamond(1.0, 1.0, 3.0, 10.0, 1.0);
     let mut buf = dynamic(4);
-    cheeky_dijkstra(&g, 0, &mut buf);
+    dijkstra(&g, 0, &mut buf);
 
     dist_eq(&buf, 3, optimal, EPS);
 }
@@ -27,7 +27,7 @@ fn test_diamond_selects_shortest() {
 fn test_disconnected_graph() {
     let g = disconnected(6, 1.0);
     let mut buf = dynamic(6);
-    cheeky_dijkstra(&g, 0, &mut buf);
+    dijkstra(&g, 0, &mut buf);
 
     dists_eq(&buf, &[(0, 0.0), (1, 1.0), (2, 2.0)], EPS);
     all_unreachable(&buf, &[3, 4, 5]);
@@ -41,7 +41,7 @@ fn test_path_reconstruction() {
     g.add_edge(0, 2, 1.0); // shortcut
 
     let mut buf = dynamic(3);
-    cheeky_dijkstra(&g, 0, &mut buf);
+    dijkstra(&g, 0, &mut buf);
 
     dist_eq(&buf, 2, 1.0, EPS);
     path_eq(&buf, 2, &[0, 2]);
@@ -78,7 +78,7 @@ fn test_parallel_edges() {
     g.add_edge(0, 1, 7.0);
 
     let mut buf = dynamic(2);
-    cheeky_dijkstra(&g, 0, &mut buf);
+    dijkstra(&g, 0, &mut buf);
 
     dist_eq(&buf, 1, 3.0, EPS);
 }
@@ -87,7 +87,7 @@ fn test_parallel_edges() {
 fn test_grid() {
     let g = grid(5, 5, 1.0);
     let mut buf = dynamic(25);
-    cheeky_dijkstra(&g, 0, &mut buf);
+    dijkstra(&g, 0, &mut buf);
 
     dist_eq(&buf, 24, 8.0, EPS); // 4 right + 4 down
 }

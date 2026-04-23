@@ -2,10 +2,6 @@ use super::graphs::EuclideanGraph;
 use super::maps::GridMap;
 use super::state::{CellState, EdgeState, VertexState};
 
-// =============================================================================
-// Maze visual
-// =============================================================================
-
 /// Maze state for SSSP/MST algorithms.
 #[derive(Clone)]
 pub struct VisState {
@@ -28,10 +24,10 @@ impl VisState {
     fn new_from_map(map: &GridMap, start: (usize, usize)) -> Self {
         let mut grid = vec![vec![CellState::unvisited(); map.cols]; map.rows];
 
-        for row in 0..map.rows {
-            for col in 0..map.cols {
+        for (row, row_cells) in grid.iter_mut().enumerate() {
+            for (col, cell) in row_cells.iter_mut().enumerate() {
                 if map.is_wall(row, col) {
-                    grid[row][col] = CellState::Wall;
+                    *cell = CellState::Wall;
                 }
             }
         }
@@ -76,10 +72,6 @@ impl VisState {
         }
     }
 }
-
-// =============================================================================
-// Graph visual
-// =============================================================================
 
 /// Graph state for SSSP/MST algorithms.
 #[derive(Clone)]

@@ -6,7 +6,7 @@ pub trait Heuristic<T: FloatNumber>: Clone {
     fn estimate(&self, vertex: usize, target: usize) -> T;
 }
 
-/// Zero heuristic — reduces A* to Dijkstra.
+/// Zero heuristic (reduces A* to Dijkstra).
 #[derive(Clone, Debug, Default)]
 pub struct ZeroHeuristic;
 
@@ -17,7 +17,7 @@ impl<T: FloatNumber> Heuristic<T> for ZeroHeuristic {
     }
 }
 
-/// Wraps a plain function pointer as a `Heuristic`.
+/// Wraps plain function pointer as `Heuristic`.
 #[derive(Clone)]
 pub struct FnHeuristic<T: FloatNumber> {
     f: fn(usize, usize) -> T,
@@ -69,7 +69,7 @@ impl<H> AStarConfig<H> {
     }
 
     pub fn target(&self) -> Option<usize> {
-        self.base.early_stop
+        self.base.targets.first().copied()
     }
 }
 

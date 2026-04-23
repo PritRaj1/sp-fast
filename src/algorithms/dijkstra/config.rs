@@ -18,8 +18,12 @@ impl Default for DijkstraConfig {
 
 impl DijkstraConfig {
     pub fn with_target(target: usize) -> Self {
+        Self::with_targets(vec![target])
+    }
+
+    pub fn with_targets(targets: Vec<usize>) -> Self {
         Self {
-            base: SsspConfig::with_target(target),
+            base: SsspConfig::with_targets(targets),
             lazy_deletion: true,
         }
     }

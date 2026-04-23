@@ -1,5 +1,5 @@
 use crate::algorithms::heaps::{BinaryHeap, PriorityQueue};
-use crate::algorithms::{MstAlgorithm, MstAlgorithmInfo, MstResult, finalize_mst, init_mst};
+use crate::algorithms::{Event, MstAlgorithm, MstAlgorithmInfo, MstResult, finalize_mst, init_mst};
 use crate::utils::{FloatNumber, Graph, MstBuffers};
 use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 use std::marker::PhantomData;
@@ -68,7 +68,16 @@ where
     H: PriorityQueue<T>,
     DefaultAllocator: Allocator<N>,
 {
-    fn run(&mut self, graph: &G, source: usize, buffers: &mut MstBuffers<T, N>) -> MstResult<T> {
+    fn run_observed<F>(
+        &mut self,
+        graph: &G,
+        source: usize,
+        buffers: &mut MstBuffers<T, N>,
+        mut observer: F,
+    ) -> MstResult<T>
+    where
+        F: FnMut(Event<T>),
+    {
         debug_assert!(source < graph.n(), "Source vertex out of bounds");
 
         init_mst(buffers, source);
@@ -93,7 +102,18 @@ where
                     buffers.key[v] = w;
                     buffers.parent[v] = u;
                     self.heap.push(w, v);
+                    observer(Event::Improved {
+                        vertex: v,
+                        dist: w,
+                        parent: u,
+                    });
                 }
+            });
+
+            observer(Event::Finalized {
+                vertex: u,
+                dist: key_u,
+                parent: buffers.parent_of(u),
             });
         }
 

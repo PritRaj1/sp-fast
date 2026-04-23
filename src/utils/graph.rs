@@ -1,13 +1,15 @@
 use nalgebra::RealField;
-use num_traits::Float;
+use num_traits::float::FloatCore;
+
+/// Sentinel for "no valid vertex".
+pub const NO_VERTEX: usize = usize::MAX;
 
 /// Scalar weight.
-pub trait FloatNumber: RealField + Float + std::fmt::Debug + Send + Sync + 'static {}
+pub trait FloatNumber: RealField + FloatCore + std::fmt::Debug + Send + Sync + 'static {}
 
-impl<T> FloatNumber for T where T: RealField + Float + std::fmt::Debug + Send + Sync + 'static {}
+impl<T> FloatNumber for T where T: RealField + FloatCore + std::fmt::Debug + Send + Sync + 'static {}
 
-/// Directed weighted edge. `meta` is extra per-edge state available to
-/// algorithms; leave it `()` when scalar weight alone is enough.
+/// Directed weighted edge. `meta` carries per-edge payload; `()` by default.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Edge<T: FloatNumber, M = ()> {
     pub to: usize,
@@ -27,8 +29,7 @@ impl<T: FloatNumber, M> Edge<T, M> {
     }
 }
 
-/// Read-only graph. Each out-edge exposes weight `T` plus payload `Self::Meta`;
-/// scalar graphs use `type Meta = ()`, richer algorithms use extra arbitrary data.
+/// Read-only graph. Out-edges expose weight `T` and payload `Self::Meta`.
 pub trait Graph<T: FloatNumber> {
     type Meta;
     fn n(&self) -> usize;

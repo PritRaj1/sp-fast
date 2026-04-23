@@ -19,7 +19,7 @@ impl<T: FloatNumber> PairNode<T> {
     }
 }
 
-/// Merges two heap trees, returning the root with smaller key.
+/// Merges two heap trees, returns root with smaller key.
 fn meld<T: FloatNumber>(
     a: Option<Box<PairNode<T>>>,
     b: Option<Box<PairNode<T>>>,

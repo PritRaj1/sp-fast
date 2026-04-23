@@ -8,30 +8,37 @@ use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 /// Shared SSSP knobs.
 #[derive(Clone, Debug, Default)]
 pub struct SsspConfig {
-    /// Stop once this vertex is finalised.
-    pub early_stop: Option<usize>,
+    /// Target vertices for Dijkstra multi-target early-stop; empty = no stop.
+    pub targets: Vec<usize>,
 }
 
 impl SsspConfig {
     pub fn with_target(target: usize) -> Self {
-        Self {
-            early_stop: Some(target),
-        }
+        Self::with_targets(vec![target])
+    }
+
+    pub fn with_targets(targets: Vec<usize>) -> Self {
+        Self { targets }
     }
 
     #[inline]
-    pub fn should_stop(&self, vertex: usize) -> bool {
-        self.early_stop == Some(vertex)
+    pub fn is_target(&self, vertex: usize) -> bool {
+        self.targets.contains(&vertex)
     }
 }
 
-/// Algorithm configs delegate here for early-stop queries.
+/// Exposes core SSSP knobs through any algorithm's config.
 pub trait HasSsspConfig {
     fn sssp_config(&self) -> &SsspConfig;
 
     #[inline]
-    fn should_stop(&self, vertex: usize) -> bool {
-        self.sssp_config().should_stop(vertex)
+    fn targets(&self) -> &[usize] {
+        &self.sssp_config().targets
+    }
+
+    #[inline]
+    fn is_target(&self, vertex: usize) -> bool {
+        self.sssp_config().is_target(vertex)
     }
 }
 
@@ -82,6 +89,33 @@ impl<T: FloatNumber> ApspResult<T> {
 }
 
 // =============================================================================
+// Events for observer
+// =============================================================================
+
+/// Different algorithms emit different subsets:
+///
+/// - Dijkstra, A*, Prim: `Improved` + `Finalized`
+/// - Bellman-Ford:       `Improved` + `Iteration`
+/// - Floyd-Warshall:     `Iteration`
+#[derive(Clone, Copy, Debug)]
+pub enum Event<T: FloatNumber> {
+    /// Vertex distance/key just improved during edge relaxation.
+    Improved {
+        vertex: usize,
+        dist: T,
+        parent: usize,
+    },
+    /// Vertex just finalized (popped from queue / added to MST); distance final.
+    Finalized {
+        vertex: usize,
+        dist: T,
+        parent: Option<usize>,
+    },
+    /// Outer iter complete (BF: one pass; FW: one intermediate `k`).
+    Iteration(usize),
+}
+
+// =============================================================================
 // Traits
 // =============================================================================
 
@@ -97,7 +131,21 @@ where
     G: Graph<T>,
     DefaultAllocator: Allocator<N>,
 {
-    fn run(&mut self, graph: &G, source: usize, buffers: &mut SsspBuffers<T, N>) -> SsspResult<T>;
+    /// Primitive: runs with observer notified of every progress event.
+    fn run_observed<F>(
+        &mut self,
+        graph: &G,
+        source: usize,
+        buffers: &mut SsspBuffers<T, N>,
+        observer: F,
+    ) -> SsspResult<T>
+    where
+        F: FnMut(Event<T>);
+
+    #[inline]
+    fn run(&mut self, graph: &G, source: usize, buffers: &mut SsspBuffers<T, N>) -> SsspResult<T> {
+        self.run_observed(graph, source, buffers, |_| {})
+    }
 }
 
 pub trait MstAlgorithmInfo {
@@ -111,7 +159,20 @@ where
     G: Graph<T>,
     DefaultAllocator: Allocator<N>,
 {
-    fn run(&mut self, graph: &G, source: usize, buffers: &mut MstBuffers<T, N>) -> MstResult<T>;
+    fn run_observed<F>(
+        &mut self,
+        graph: &G,
+        source: usize,
+        buffers: &mut MstBuffers<T, N>,
+        observer: F,
+    ) -> MstResult<T>
+    where
+        F: FnMut(Event<T>);
+
+    #[inline]
+    fn run(&mut self, graph: &G, source: usize, buffers: &mut MstBuffers<T, N>) -> MstResult<T> {
+        self.run_observed(graph, source, buffers, |_| {})
+    }
 }
 
 pub trait ApspAlgorithmInfo {
@@ -124,22 +185,37 @@ where
     T: FloatNumber,
     G: Graph<T>,
 {
-    fn run(&mut self, graph: &G, buffers: &mut ApspBuffers<T>) -> ApspResult<T>;
+    fn run_observed<F>(
+        &mut self,
+        graph: &G,
+        buffers: &mut ApspBuffers<T>,
+        observer: F,
+    ) -> ApspResult<T>
+    where
+        F: FnMut(Event<T>);
+
+    #[inline]
+    fn run(&mut self, graph: &G, buffers: &mut ApspBuffers<T>) -> ApspResult<T> {
+        self.run_observed(graph, buffers, |_| {})
+    }
 }
 
 // =============================================================================
 // Runner helpers
 // =============================================================================
 
+/// Reset buffers, mark every source with distance zero.
 #[inline]
-pub fn init_sssp<T, N>(buffers: &mut SsspBuffers<T, N>, source: usize)
+pub fn init_sssp<T, N>(buffers: &mut SsspBuffers<T, N>, sources: &[usize])
 where
     T: FloatNumber,
     N: Dim,
     DefaultAllocator: Allocator<N>,
 {
     buffers.reset_inf();
-    buffers.set_source(source);
+    for &s in sources {
+        buffers.dist[s] = T::zero();
+    }
 }
 
 pub fn finalize_sssp<T, N>(

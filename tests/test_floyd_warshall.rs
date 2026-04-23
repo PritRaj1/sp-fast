@@ -7,7 +7,7 @@ use sssp_fast::{AdjListGraph, ApspAlgorithm};
 fn test_shortest_paths() {
     let (g, _) = diamond(1.0, 1.0, 3.0, 10.0, 1.0);
     let mut buf = apsp(4);
-    cheeky_floyd_warshall(&g, &mut buf);
+    floyd_warshall(&g, &mut buf);
 
     apsp_dist_eq(&buf, 0, 0, 0.0, EPS);
     apsp_dist_eq(&buf, 0, 1, 1.0, EPS);
@@ -19,7 +19,7 @@ fn test_shortest_paths() {
 fn test_unreachable_pairs() {
     let g = disconnected(6, 1.0);
     let mut buf = apsp(6);
-    cheeky_floyd_warshall(&g, &mut buf);
+    floyd_warshall(&g, &mut buf);
 
     apsp_dist_eq(&buf, 0, 1, 1.0, EPS);
     apsp_unreachable(&buf, 0, 3);
@@ -35,7 +35,7 @@ fn test_path_reconstruction() {
     g.add_edge(0, 3, 10.0); // longer direct edge
 
     let mut buf = apsp(4);
-    cheeky_floyd_warshall(&g, &mut buf);
+    floyd_warshall(&g, &mut buf);
 
     apsp_dist_eq(&buf, 0, 3, 3.0, EPS);
     apsp_path_eq(&buf, 0, 3, &[0, 1, 2, 3]);
@@ -50,7 +50,7 @@ fn test_negative_weights() {
     g.add_edge(2, 3, -5.0);
 
     let mut buf = apsp(4);
-    let result = cheeky_floyd_warshall(&g, &mut buf);
+    let result = floyd_warshall(&g, &mut buf);
 
     apsp_dist_eq(&buf, 0, 3, 5.0, EPS);
     apsp_path_eq(&buf, 0, 3, &[0, 2, 3]);

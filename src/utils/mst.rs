@@ -1,7 +1,5 @@
-use super::graph::FloatNumber;
+use super::graph::{FloatNumber, NO_VERTEX};
 use nalgebra::{DefaultAllocator, Dim, OVector, U1, allocator::Allocator};
-
-pub const MST_PARENT_NONE: usize = usize::MAX;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MstEdge<T: FloatNumber> {
@@ -38,40 +36,40 @@ where
     pub fn new_inf(n: N) -> Self {
         Self {
             key: OVector::<T, N>::from_element_generic(n, U1, T::infinity()),
-            parent: OVector::<usize, N>::from_element_generic(n, U1, MST_PARENT_NONE),
+            parent: OVector::<usize, N>::from_element_generic(n, U1, NO_VERTEX),
             in_mst: OVector::<bool, N>::from_element_generic(n, U1, false),
         }
     }
 
     pub fn reset_inf(&mut self) {
         self.key.fill(T::infinity());
-        self.parent.fill(MST_PARENT_NONE);
+        self.parent.fill(NO_VERTEX);
         self.in_mst.fill(false);
     }
 
     #[inline]
     pub fn set_source(&mut self, s: usize) {
         self.key[s] = T::zero();
-        self.parent[s] = MST_PARENT_NONE;
+        self.parent[s] = NO_VERTEX;
     }
 
     #[inline]
     pub fn parent_of(&self, v: usize) -> Option<usize> {
         let p = self.parent[v];
-        (p != MST_PARENT_NONE).then_some(p)
+        (p != NO_VERTEX).then_some(p)
     }
 
     /// MST edges (one per non-root vertex in tree).
     pub fn collect_edges(&self) -> Vec<MstEdge<T>> {
         (0..self.parent.len())
-            .filter(|&v| self.in_mst[v] && self.parent[v] != MST_PARENT_NONE)
+            .filter(|&v| self.in_mst[v] && self.parent[v] != NO_VERTEX)
             .map(|v| MstEdge::new(self.parent[v], v, self.key[v]))
             .collect()
     }
 
     pub fn total_weight(&self) -> T {
         (0..self.key.len())
-            .filter(|&v| self.in_mst[v] && self.parent[v] != MST_PARENT_NONE)
+            .filter(|&v| self.in_mst[v] && self.parent[v] != NO_VERTEX)
             .fold(T::zero(), |acc, v| acc + self.key[v])
     }
 

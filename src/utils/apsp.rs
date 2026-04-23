@@ -1,7 +1,4 @@
-use super::graph::FloatNumber;
-
-/// Sentinel for "no next vertex on path".
-pub const APSP_NO_PATH: usize = usize::MAX;
+use super::graph::{FloatNumber, NO_VERTEX};
 
 /// APSP buffers. V×V distance matrix + next-hop matrix, both row-major flattened.
 #[derive(Clone, Debug)]
@@ -15,7 +12,7 @@ impl<T: FloatNumber> ApspBuffers<T> {
     pub fn new(n: usize) -> Self {
         let size = n * n;
         let mut dist = vec![T::infinity(); size];
-        let next = vec![APSP_NO_PATH; size];
+        let next = vec![NO_VERTEX; size];
         for i in 0..n {
             dist[i * n + i] = T::zero();
         }
@@ -24,7 +21,7 @@ impl<T: FloatNumber> ApspBuffers<T> {
 
     pub fn reset(&mut self) {
         self.dist.fill(T::infinity());
-        self.next.fill(APSP_NO_PATH);
+        self.next.fill(NO_VERTEX);
         for i in 0..self.n {
             self.dist[i * self.n + i] = T::zero();
         }
@@ -62,7 +59,7 @@ impl<T: FloatNumber> ApspBuffers<T> {
         let mut curr = i;
         while curr != j {
             curr = self.get_next(curr, j);
-            if curr == APSP_NO_PATH {
+            if curr == NO_VERTEX {
                 return None;
             }
             path.push(curr);

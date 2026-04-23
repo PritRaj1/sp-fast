@@ -78,7 +78,8 @@ DijkstraConfig {
 ## Usage
 
 ```rust
-use sssp_fast::{AdjListGraph, SsspBuffers, dijkstra, Dyn};
+use nalgebra::Dyn;
+use sssp_fast::{AdjListGraph, SsspBuffers, dijkstra};
 
 let mut graph: AdjListGraph<f64> = AdjListGraph::new(4);
 graph.add_edge(0, 1, 1.0);

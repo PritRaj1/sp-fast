@@ -1,6 +1,4 @@
-/// Shared visualization state enums and utilities.
-
-/// Vertex/cell state for visualisation (grids and graphs).
+/// Vertex/cell state for visuals (grids and graphs).
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum VertexState {
     Unvisited,

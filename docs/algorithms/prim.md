@@ -83,7 +83,8 @@ PrimConfig {
 ## Usage
 
 ```rust
-use sssp_fast::{AdjListGraph, MstBuffers, cheeky_prim, Dyn};
+use nalgebra::Dyn;
+use sssp_fast::{AdjListGraph, MstBuffers, prim};
 
 let mut graph: AdjListGraph<f64> = AdjListGraph::new(4);
 
@@ -94,7 +95,7 @@ graph.add_edge(1, 2, 1.0); graph.add_edge(2, 1, 1.0);
 graph.add_edge(2, 3, 5.0); graph.add_edge(3, 2, 5.0);
 
 let mut buffers: MstBuffers<f64, Dyn> = MstBuffers::new_inf(Dyn(4));
-let result = cheeky_prim(&graph, 0, &mut buffers);
+let result = prim(&graph, 0, &mut buffers);
 
 // result.total_weight = sum of MST edge weights
 // result.is_connected = true if all vertices reached

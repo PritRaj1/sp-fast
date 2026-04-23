@@ -1,169 +1,68 @@
 mod common;
 
-use std::collections::BinaryHeap;
-use std::fs;
-
-use common::gif_utils::{png_to_gif_frame, setup_gif};
-use common::maps::{GridMap, maze};
-use common::rendering::{CELL_SIZE, RenderParams, render_frame};
+use common::encoder::{make_titles, write_maze_gif};
+use common::maps::maze;
 use common::vis::VisState;
+use sssp_fast::{AStar, Dyn, Event, Heuristic, SsspAlgorithm, SsspBuffers};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-struct HeapEntry {
-    f: u64, // f = g + h
-    g: u64,
-    vertex: usize,
+const HOLD: usize = 10;
+const OUT: &str = "examples/gifs/astar_maze.gif";
+
+#[derive(Clone)]
+struct Manhattan {
+    cols: usize,
 }
 
-impl Ord for HeapEntry {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.f.cmp(&self.f).then_with(|| other.g.cmp(&self.g))
+impl Heuristic<f64> for Manhattan {
+    fn estimate(&self, v: usize, target: usize) -> f64 {
+        let (vr, vc) = (v / self.cols, v % self.cols);
+        let (tr, tc) = (target / self.cols, target % self.cols);
+        (vr.abs_diff(tr) + vc.abs_diff(tc)) as f64
     }
-}
-
-impl PartialOrd for HeapEntry {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-fn manhattan(map: &GridMap, v: usize, target: usize) -> u64 {
-    let (vr, vc) = map.to_coords(v);
-    let (tr, tc) = map.to_coords(target);
-    let dr = if vr > tr { vr - tr } else { tr - vr };
-    let dc = if vc > tc { vc - tc } else { tc - vc };
-    (dr + dc) as u64
-}
-
-fn astar_visual(
-    map: &GridMap,
-    start: (usize, usize),
-    end: (usize, usize),
-) -> (Vec<VisState>, Vec<(usize, usize)>) {
-    let n = map.rows * map.cols;
-    let source = map.to_vertex(start.0, start.1);
-    let target = map.to_vertex(end.0, end.1);
-
-    let mut g_score = vec![u64::MAX; n];
-    let mut parent = vec![usize::MAX; n];
-    let mut visited = vec![false; n];
-    let mut heap = BinaryHeap::new();
-
-    g_score[source] = 0;
-    heap.push(HeapEntry {
-        f: manhattan(map, source, target),
-        g: 0,
-        vertex: source,
-    });
-
-    let mut frames = Vec::new();
-    let mut vis_state = VisState::new(map, start, end);
-    frames.push(vis_state.clone());
-
-    let directions: [(i32, i32); 4] = [(-1, 0), (1, 0), (0, -1), (0, 1)];
-
-    while let Some(HeapEntry { f: _, g, vertex: u }) = heap.pop() {
-        if g > g_score[u] || visited[u] {
-            continue;
-        }
-
-        visited[u] = true;
-        let (row, col) = map.to_coords(u);
-        vis_state.mark_visited(row, col);
-
-        if u == target {
-            break;
-        }
-
-        for (dr, dc) in directions {
-            let nr = row as i32 + dr;
-            let nc = col as i32 + dc;
-
-            if nr >= 0 && nc >= 0 {
-                let nr = nr as usize;
-                let nc = nc as usize;
-
-                if map.is_passable(nr, nc) {
-                    let v = map.to_vertex(nr, nc);
-                    let tentative_g = g_score[u] + 1;
-
-                    if tentative_g < g_score[v] {
-                        g_score[v] = tentative_g;
-                        parent[v] = u;
-                        let h = manhattan(map, v, target);
-                        heap.push(HeapEntry {
-                            f: tentative_g + h,
-                            g: tentative_g,
-                            vertex: v,
-                        });
-                        vis_state.mark_in_queue(nr, nc);
-                    }
-                }
-            }
-        }
-
-        frames.push(vis_state.clone());
-    }
-
-    let mut path = Vec::new();
-    if g_score[target] < u64::MAX {
-        let mut current = target;
-        while current != usize::MAX && current != source {
-            let (r, c) = map.to_coords(current);
-            path.push((r, c));
-            current = parent[current];
-        }
-        path.push(start);
-        path.reverse();
-    }
-
-    vis_state.mark_path(&path);
-    for _ in 0..10 {
-        frames.push(vis_state.clone());
-    }
-
-    (frames, path)
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (map, start, end) = maze();
+    let source = map.to_vertex(start.0, start.1);
+    let target = map.to_vertex(end.0, end.1);
+    let n = map.rows * map.cols;
 
-    println!("Running A* with Manhattan heuristic.");
-    let (frames, path) = astar_visual(&map, start, end);
-    let num_frames = frames.len();
-    let path_len = path.len().saturating_sub(1);
+    let mut state = VisState::new(&map, start, end);
+    let mut frames = vec![state.clone()];
+    let mut buf: SsspBuffers<f64, Dyn> = SsspBuffers::new_inf(Dyn(n));
 
-    let width = (map.cols as u32 * CELL_SIZE) as u16;
-    let height = (map.rows as u32 * CELL_SIZE + 40) as u16;
+    let mut algo: AStar<f64, Manhattan> = AStar::new(target, Manhattan { cols: map.cols });
+    algo.run_observed(&map, source, &mut buf, |event| match event {
+        Event::Improved { vertex, .. } => {
+            let (r, c) = map.to_coords(vertex);
+            state.mark_in_queue(r, c);
+        }
+        Event::Finalized { vertex, .. } => {
+            let (r, c) = map.to_coords(vertex);
+            state.mark_visited(r, c);
+            frames.push(state.clone());
+        }
+        Event::Iteration(_) => {}
+    });
 
-    let gif_path = "examples/gifs/astar_maze.gif";
-    let png_path = "examples/gifs/_temp_frame.png";
-
-    let mut encoder = setup_gif(gif_path, width, height)?;
-
-    for (i, frame) in frames.iter().enumerate() {
-        let title = if i < num_frames - 10 {
-            format!("A*: Step {}", i)
-        } else {
-            format!("Path: {} steps", path_len)
-        };
-
-        render_frame(
-            png_path,
-            RenderParams {
-                grid: &frame.grid,
-                visit_order: &frame.visit_order,
-                max_visited: frame.max_visited,
-                title: &title,
-            },
-        )?;
-
-        let gif_frame = png_to_gif_frame(png_path, width, height)?;
-        encoder.write_frame(&gif_frame)?;
+    let path: Vec<(usize, usize)> = buf
+        .path_to(target)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|v| map.to_coords(v))
+        .collect();
+    state.mark_path(&path);
+    for _ in 0..HOLD {
+        frames.push(state.clone());
     }
 
-    fs::remove_file(png_path).ok();
-    println!("Saved to {}", gif_path);
-
+    let titles = make_titles(
+        frames.len(),
+        frames.len() - HOLD,
+        |i| format!("A*: step {}", i),
+        format!("Path: {} steps", path.len().saturating_sub(1)),
+    );
+    write_maze_gif(OUT, map.rows, map.cols, &frames, &titles)?;
+    println!("wrote {}", OUT);
     Ok(())
 }

@@ -1,9 +1,11 @@
-use crate::algorithms::HasSsspConfig;
 use crate::algorithms::heaps::{BinaryHeap, PriorityQueue};
-use crate::algorithms::{SsspAlgorithm, SsspAlgorithmInfo, SsspResult, finalize_sssp, init_sssp};
+use crate::algorithms::{
+    Event, SsspAlgorithm, SsspAlgorithmInfo, SsspResult, finalize_sssp, init_sssp,
+};
 use crate::utils::{FloatNumber, Graph, RelaxResult, SsspBuffers, relax_with};
 use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 use std::marker::PhantomData;
+use std::slice;
 
 use super::config::{AStarConfig, Heuristic};
 
@@ -80,12 +82,21 @@ where
     H: PriorityQueue<T>,
     DefaultAllocator: Allocator<N>,
 {
-    fn run(&mut self, graph: &G, source: usize, buffers: &mut SsspBuffers<T, N>) -> SsspResult<T> {
+    fn run_observed<F>(
+        &mut self,
+        graph: &G,
+        source: usize,
+        buffers: &mut SsspBuffers<T, N>,
+        mut observer: F,
+    ) -> SsspResult<T>
+    where
+        F: FnMut(Event<T>),
+    {
         debug_assert!(source < graph.n(), "Source vertex out of bounds");
 
         let target = self.config.target().expect("A* requires a target vertex");
 
-        init_sssp(buffers, source);
+        init_sssp(buffers, slice::from_ref(&source));
         self.heap.clear();
 
         let h_source = self.config.heuristic.estimate(source, target);
@@ -103,28 +114,41 @@ where
                 continue;
             }
 
-            if self.config.should_stop(u) {
-                break;
+            // Goal reached, skip relaxation, break.
+            if u != target {
+                iterations += 1;
+                graph.for_each_out_edge(u, |v, w, _meta| {
+                    debug_assert!(w >= T::zero(), "A* requires non-negative weights");
+
+                    if let RelaxResult::Improved = relax_with(
+                        buffers.dist.as_mut_slice(),
+                        buffers.parent.as_mut_slice(),
+                        u,
+                        g_u,
+                        v,
+                        w,
+                    ) {
+                        let new_g = buffers.dist[v];
+                        let h_v = self.config.heuristic.estimate(v, target);
+                        self.heap.push(new_g + h_v, v);
+                        observer(Event::Improved {
+                            vertex: v,
+                            dist: new_g,
+                            parent: u,
+                        });
+                    }
+                });
             }
 
-            iterations += 1;
-
-            graph.for_each_out_edge(u, |v, w, _meta| {
-                debug_assert!(w >= T::zero(), "A* requires non-negative weights");
-
-                if let RelaxResult::Improved = relax_with(
-                    buffers.dist.as_mut_slice(),
-                    buffers.parent.as_mut_slice(),
-                    u,
-                    g_u,
-                    v,
-                    w,
-                ) {
-                    let h_v = self.config.heuristic.estimate(v, target);
-                    let f_v = buffers.dist[v] + h_v;
-                    self.heap.push(f_v, v);
-                }
+            observer(Event::Finalized {
+                vertex: u,
+                dist: g_u,
+                parent: buffers.parent_of(u),
             });
+
+            if u == target {
+                break;
+            }
         }
 
         finalize_sssp(buffers, iterations, false)

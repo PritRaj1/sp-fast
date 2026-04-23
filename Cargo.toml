@@ -14,9 +14,11 @@ categories = ["algorithms", "science"]
 [dependencies]
 nalgebra = "0.33.2"
 num-traits = "0.2"
+ordered-float = "4.6"
 rayon = "1.10"
 
 [dev-dependencies]
 plotters = "0.3.7"
 gif = "0.13.1"
 image = "0.25.6"
+fastrand = "2.3"

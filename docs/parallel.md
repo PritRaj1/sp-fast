@@ -12,7 +12,8 @@ Where k = number of sources.
 ## Usage
 
 ```rust
-use sssp_fast::{parallel_sssp, Dijkstra, Dyn};
+use nalgebra::Dyn;
+use sssp_fast::{parallel_sssp, Dijkstra};
 
 let sources = vec![0, 5, 10];
 let result = parallel_sssp::<f64, Dyn, _, _, _>(&graph, &sources, || Dijkstra::new());
@@ -46,7 +47,8 @@ Graph is shared, safe, read-only across threads.
 ## All-pairs
 
 ```rust
-use sssp_fast::{all_pairs_sssp, Dijkstra, Dyn};
+use nalgebra::Dyn;
+use sssp_fast::{all_pairs_sssp, Dijkstra};
 
 let result = all_pairs_sssp::<f64, Dyn, _, _, _>(&graph, || Dijkstra::new());
 // result.dist(i, j) = shortest distance from i to j

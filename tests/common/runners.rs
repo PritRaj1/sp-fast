@@ -1,9 +1,9 @@
 use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 use sssp_fast::{FloatNumber, Graph, SsspAlgorithm, SsspAlgorithmInfo, SsspBuffers, SsspResult};
 
-pub use sssp_fast::cheeky_bellman_ford;
-pub use sssp_fast::cheeky_dijkstra;
-pub use sssp_fast::cheeky_floyd_warshall;
+pub use sssp_fast::bellman_ford;
+pub use sssp_fast::dijkstra;
+pub use sssp_fast::floyd_warshall;
 
 pub fn run_sssp<T, N, G, A>(
     algo: &mut A,

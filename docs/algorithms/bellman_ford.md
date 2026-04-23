@@ -96,7 +96,8 @@ BellmanFordConfig {
 ## Usage
 
 ```rust
-use sssp_fast::{AdjListGraph, SsspBuffers, cheeky_bellman_ford, Dyn};
+use nalgebra::Dyn;
+use sssp_fast::{AdjListGraph, SsspBuffers, bellman_ford};
 
 let mut graph: AdjListGraph<f64> = AdjListGraph::new(4);
 graph.add_edge(0, 1, 4.0);
@@ -104,7 +105,7 @@ graph.add_edge(1, 2, -2.0);  // negative weight OK
 graph.add_edge(2, 3, 3.0);
 
 let mut buffers: SsspBuffers<f64, Dyn> = SsspBuffers::new_inf(Dyn(4));
-let result = cheeky_bellman_ford(&graph, 0, &mut buffers);
+let result = bellman_ford(&graph, 0, &mut buffers);
 
 if result.negative_cycle {
     println!("Negative cycle detected!");
@@ -122,7 +123,7 @@ graph.add_edge(0, 1, 1.0);
 graph.add_edge(1, 2, 1.0);
 graph.add_edge(2, 0, -3.0);  // cycle total: -1
 
-let result = cheeky_bellman_ford(&graph, 0, &mut buffers);
+let result = bellman_ford(&graph, 0, &mut buffers);
 assert!(result.negative_cycle);  // detected!
 ```
 

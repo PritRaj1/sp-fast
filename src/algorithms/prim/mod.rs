@@ -10,11 +10,7 @@ use crate::utils::{FloatNumber, Graph, MstBuffers};
 use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 
 /// One-shot Prim's MST.
-pub fn cheeky_prim<T, N, G>(
-    graph: &G,
-    source: usize,
-    buffers: &mut MstBuffers<T, N>,
-) -> MstResult<T>
+pub fn prim<T, N, G>(graph: &G, source: usize, buffers: &mut MstBuffers<T, N>) -> MstResult<T>
 where
     T: FloatNumber,
     N: Dim,

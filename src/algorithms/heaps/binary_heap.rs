@@ -1,38 +1,14 @@
 use crate::utils::FloatNumber;
-use std::cmp::Ordering;
+use ordered_float::NotNan;
+use std::cmp::Reverse;
 use std::collections::BinaryHeap as StdBinaryHeap;
 
 use super::traits::{HeapEntry, PriorityQueue};
 
-#[derive(Clone, Copy, Debug)]
-struct MinHeapEntry<T: FloatNumber>(HeapEntry<T>);
-
-impl<T: FloatNumber> PartialEq for MinHeapEntry<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.dist == other.0.dist && self.0.vertex == other.0.vertex
-    }
-}
-
-impl<T: FloatNumber> Eq for MinHeapEntry<T> {}
-
-impl<T: FloatNumber> PartialOrd for MinHeapEntry<T> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl<T: FloatNumber> Ord for MinHeapEntry<T> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match other.0.dist.partial_cmp(&self.0.dist) {
-            Some(ord) => ord,
-            None => Ordering::Equal,
-        }
-    }
-}
-
+/// Min-heap via `Reverse` over std max-heap; `NotNan` rejects NaN at push.
 #[derive(Debug)]
 pub struct BinaryHeap<T: FloatNumber> {
-    heap: StdBinaryHeap<MinHeapEntry<T>>,
+    heap: StdBinaryHeap<Reverse<(NotNan<T>, usize)>>,
 }
 
 impl<T: FloatNumber> BinaryHeap<T> {
@@ -66,12 +42,15 @@ impl<T: FloatNumber> PriorityQueue<T> for BinaryHeap<T> {
 
     #[inline]
     fn push(&mut self, dist: T, vertex: usize) {
-        self.heap.push(MinHeapEntry(HeapEntry::new(dist, vertex)));
+        let d = NotNan::new(dist).expect("shortest-path distances must not be NaN");
+        self.heap.push(Reverse((d, vertex)));
     }
 
     #[inline]
     fn pop(&mut self) -> Option<HeapEntry<T>> {
-        self.heap.pop().map(|e| e.0)
+        self.heap
+            .pop()
+            .map(|Reverse((d, v))| HeapEntry::new(d.into_inner(), v))
     }
 
     #[inline]

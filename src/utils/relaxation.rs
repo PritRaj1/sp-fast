@@ -38,7 +38,7 @@ pub fn relax_with<T: FloatNumber>(
     }
 }
 
-/// Relax conditionally. `gate` is evaluated lazily, only when improved
+/// Relax conditionally. `gate` evaluated lazily — only when distance improves.
 #[inline]
 pub fn relax_cond<T, P>(
     dist: &mut [T],

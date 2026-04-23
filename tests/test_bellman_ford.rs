@@ -7,7 +7,7 @@ use sssp_fast::AdjListGraph;
 fn test_linear_chain() {
     let g = linear(5, 1.0);
     let mut buf = dynamic(5);
-    cheeky_bellman_ford(&g, 0, &mut buf);
+    bellman_ford(&g, 0, &mut buf);
 
     for i in 0..5 {
         dist_eq(&buf, i, i as f64, EPS);
@@ -18,7 +18,7 @@ fn test_linear_chain() {
 fn test_diamond_selects_shortest() {
     let (g, optimal) = diamond(1.0, 1.0, 3.0, 10.0, 1.0);
     let mut buf = dynamic(4);
-    cheeky_bellman_ford(&g, 0, &mut buf);
+    bellman_ford(&g, 0, &mut buf);
 
     dist_eq(&buf, 3, optimal, EPS);
 }
@@ -27,7 +27,7 @@ fn test_diamond_selects_shortest() {
 fn test_disconnected_graph() {
     let g = disconnected(6, 1.0);
     let mut buf = dynamic(6);
-    cheeky_bellman_ford(&g, 0, &mut buf);
+    bellman_ford(&g, 0, &mut buf);
 
     dists_eq(&buf, &[(0, 0.0), (1, 1.0), (2, 2.0)], EPS);
     all_unreachable(&buf, &[3, 4, 5]);
@@ -41,7 +41,7 @@ fn test_path_reconstruction() {
     g.add_edge(0, 2, 1.0); // shortcut
 
     let mut buf = dynamic(3);
-    cheeky_bellman_ford(&g, 0, &mut buf);
+    bellman_ford(&g, 0, &mut buf);
 
     dist_eq(&buf, 2, 1.0, EPS);
     path_eq(&buf, 2, &[0, 2]);
@@ -54,7 +54,7 @@ fn test_negative_weight_edge() {
     g.add_edge(1, 2, -5.0);
 
     let mut buf = dynamic(3);
-    let result = cheeky_bellman_ford(&g, 0, &mut buf);
+    let result = bellman_ford(&g, 0, &mut buf);
 
     dists_eq(&buf, &[(0, 0.0), (1, 10.0), (2, 5.0)], EPS);
     assert!(!result.negative_cycle);
@@ -70,7 +70,7 @@ fn test_negative_weight_shorter_path() {
     g.add_edge(2, 3, -5.0);
 
     let mut buf = dynamic(4);
-    let result = cheeky_bellman_ford(&g, 0, &mut buf);
+    let result = bellman_ford(&g, 0, &mut buf);
 
     dist_eq(&buf, 3, 5.0, EPS);
     path_eq(&buf, 3, &[0, 2, 3]);
@@ -86,7 +86,7 @@ fn test_simple_negative_cycle() {
     g.add_edge(2, 0, -3.0);
 
     let mut buf = dynamic(3);
-    let result = cheeky_bellman_ford(&g, 0, &mut buf);
+    let result = bellman_ford(&g, 0, &mut buf);
 
     assert!(result.negative_cycle);
 }
@@ -98,7 +98,7 @@ fn test_self_loop_negative() {
     g.add_edge(1, 1, -1.0); // negative self-loop
 
     let mut buf = dynamic(2);
-    let result = cheeky_bellman_ford(&g, 0, &mut buf);
+    let result = bellman_ford(&g, 0, &mut buf);
 
     assert!(result.negative_cycle);
 }

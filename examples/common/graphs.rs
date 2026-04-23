@@ -1,7 +1,21 @@
+use sssp_fast::Graph;
+
 #[derive(Clone)]
 pub struct EuclideanGraph {
     pub positions: Vec<(f64, f64)>,
     pub adjacency: Vec<Vec<(usize, f64)>>, // (neighbor, weight)
+}
+
+impl Graph<f64> for EuclideanGraph {
+    type Meta = ();
+    fn n(&self) -> usize {
+        self.positions.len()
+    }
+    fn for_each_out_edge<F: FnMut(usize, f64, &())>(&self, u: usize, mut f: F) {
+        for &(v, w) in &self.adjacency[u] {
+            f(v, w, &());
+        }
+    }
 }
 
 impl EuclideanGraph {
@@ -25,7 +39,7 @@ impl EuclideanGraph {
         &self.adjacency[u]
     }
 
-    /// Box (min_x, min_y, max_x, max_y)
+    /// Bounding box: (min_x, min_y, max_x, max_y).
     pub fn bounds(&self) -> (f64, f64, f64, f64) {
         let mut min_x = f64::MAX;
         let mut min_y = f64::MAX;
@@ -43,39 +57,17 @@ impl EuclideanGraph {
     }
 }
 
-/// Lin-congruential generator
-struct SimpleRng {
-    state: u64,
-}
-
-impl SimpleRng {
-    fn new(seed: u64) -> Self {
-        Self { state: seed }
-    }
-
-    fn next_u64(&mut self) -> u64 {
-        self.state = self.state.wrapping_mul(6364136223846793005).wrapping_add(1);
-        self.state
-    }
-
-    fn next_f64(&mut self) -> f64 {
-        (self.next_u64() >> 11) as f64 / (1u64 << 53) as f64
-    }
-}
-
-/// Random graph with vertices connected by proximity
+/// Random graph with vertices connected by proximity.
 pub fn random_euclidean_graph(
     n_vertices: usize,
     connection_radius: f64,
     seed: u64,
 ) -> EuclideanGraph {
-    let mut rng = SimpleRng::new(seed);
+    let mut rng = fastrand::Rng::with_seed(seed);
     let mut graph = EuclideanGraph::new(n_vertices);
 
     for _ in 0..n_vertices {
-        let x = rng.next_f64();
-        let y = rng.next_f64();
-        graph.positions.push((x, y));
+        graph.positions.push((rng.f64(), rng.f64()));
     }
 
     // Connect within radius
@@ -94,26 +86,25 @@ pub fn random_euclidean_graph(
     graph
 }
 
-/// Connected Euclidean graph by k-nearest + proximity
+/// Connected Euclidean graph by k-nearest + proximity.
 pub fn random_euclidean_graph_connected(
     n_vertices: usize,
     k_nearest: usize,
     extra_radius: f64,
     seed: u64,
 ) -> EuclideanGraph {
-    let mut rng = SimpleRng::new(seed);
+    let mut rng = fastrand::Rng::with_seed(seed);
     let mut graph = EuclideanGraph::new(n_vertices);
 
     for _ in 0..n_vertices {
-        let x = rng.next_f64();
-        let y = rng.next_f64();
-        graph.positions.push((x, y));
+        graph.positions.push((rng.f64(), rng.f64()));
     }
 
     // Pairwise euclidean metric
     let mut edges_added = vec![vec![false; n_vertices]; n_vertices];
 
-    // Connect k-nearest neighbors for each vertex
+    // Cross-symmetric writes to `edges_added` prevent iter_mut().enumerate().
+    #[allow(clippy::needless_range_loop)]
     for i in 0..n_vertices {
         let mut distances: Vec<(usize, f64)> = (0..n_vertices)
             .filter(|&j| j != i)
@@ -125,7 +116,7 @@ pub fn random_euclidean_graph_connected(
             })
             .collect();
 
-        distances.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+        distances.sort_by(|a, b| a.1.total_cmp(&b.1));
 
         for &(j, dist) in distances.iter().take(k_nearest) {
             if !edges_added[i][j] {
@@ -136,7 +127,8 @@ pub fn random_euclidean_graph_connected(
         }
     }
 
-    // Add extra edges within radius (for more cobwebbiness)
+    // Add extra edges within radius (for more cobwebbiness).
+    #[allow(clippy::needless_range_loop)]
     for i in 0..n_vertices {
         for j in (i + 1)..n_vertices {
             if !edges_added[i][j] {
@@ -156,7 +148,7 @@ pub fn random_euclidean_graph_connected(
     graph
 }
 
-/// Default 500-vertex graph
+/// Default 500-vertex graph.
 pub fn euclidean_500() -> (EuclideanGraph, usize, usize) {
     let graph = random_euclidean_graph_connected(500, 6, 0.08, 42);
     let start = find_vertex_near(&graph, 0.1, 0.9);
@@ -172,7 +164,7 @@ fn find_vertex_near(graph: &EuclideanGraph, target_x: f64, target_y: f64) -> usi
         .min_by(|(_, a), (_, b)| {
             let dist_a = (a.0 - target_x).powi(2) + (a.1 - target_y).powi(2);
             let dist_b = (b.0 - target_x).powi(2) + (b.1 - target_y).powi(2);
-            dist_a.partial_cmp(&dist_b).unwrap()
+            dist_a.total_cmp(&dist_b)
         })
         .map(|(i, _)| i)
         .unwrap_or(0)

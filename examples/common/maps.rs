@@ -1,9 +1,44 @@
-/// 2D grid with walls and walkable cells
+use sssp_fast::Graph;
+
+/// 2D grid with walls and walkable cells.
 #[derive(Clone)]
 pub struct GridMap {
     pub rows: usize,
     pub cols: usize,
     pub walls: Vec<Vec<bool>>,
+}
+
+/// 4-connected grid with unit-weight edges between walkable neighbours.
+/// Walls participate as vertices with zero out-edges (keeps vertex IDs stable
+/// against `to_vertex(row, col) = row * cols + col`).
+impl Graph<f64> for GridMap {
+    type Meta = ();
+    fn n(&self) -> usize {
+        self.rows * self.cols
+    }
+    fn for_each_out_edge<F: FnMut(usize, f64, &())>(&self, u: usize, mut f: F) {
+        let (r, c) = (u / self.cols, u % self.cols);
+        if self.is_wall(r, c) {
+            return;
+        }
+        let mut emit = |nr: usize, nc: usize| {
+            if !self.is_wall(nr, nc) {
+                f(nr * self.cols + nc, 1.0, &());
+            }
+        };
+        if r > 0 {
+            emit(r - 1, c);
+        }
+        if r + 1 < self.rows {
+            emit(r + 1, c);
+        }
+        if c > 0 {
+            emit(r, c - 1);
+        }
+        if c + 1 < self.cols {
+            emit(r, c + 1);
+        }
+    }
 }
 
 impl GridMap {

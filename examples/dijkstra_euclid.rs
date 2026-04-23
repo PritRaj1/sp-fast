@@ -1,158 +1,45 @@
 mod common;
 
-use std::collections::BinaryHeap;
-use std::fs;
-
-use common::gif_utils::{png_to_gif_frame, setup_gif};
-use common::graphs::{EuclideanGraph, euclidean_500};
-use common::rendering::{
-    GRAPH_HEIGHT, GRAPH_WIDTH, GraphRenderParams, TITLE_HEIGHT, render_graph_frame,
-};
+use common::encoder::{make_titles, write_graph_gif};
+use common::graphs::euclidean_500;
 use common::vis::GraphVisState;
+use sssp_fast::{Dijkstra, DijkstraConfig, Dyn, Event, SsspAlgorithm, SsspBuffers};
 
-#[derive(Clone, Copy, PartialEq)]
-struct HeapEntry {
-    dist: u64,
-    vertex: usize,
-}
-
-impl Eq for HeapEntry {}
-
-impl Ord for HeapEntry {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.dist.cmp(&self.dist)
-    }
-}
-
-impl PartialOrd for HeapEntry {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-fn dijkstra_visual(
-    graph: &EuclideanGraph,
-    start: usize,
-    end: usize,
-) -> (Vec<GraphVisState>, Vec<usize>) {
-    let n = graph.n_vertices();
-
-    // Scale to integers for heap
-    const SCALE: f64 = 1_000_000.0;
-
-    let mut dist = vec![u64::MAX; n];
-    let mut parent = vec![usize::MAX; n];
-    let mut visited = vec![false; n];
-    let mut heap = BinaryHeap::new();
-
-    dist[start] = 0;
-    heap.push(HeapEntry {
-        dist: 0,
-        vertex: start,
-    });
-
-    let mut frames = Vec::new();
-    let mut vis_state = GraphVisState::new(graph, start, end);
-    frames.push(vis_state.clone());
-
-    while let Some(HeapEntry { dist: d, vertex: u }) = heap.pop() {
-        if d > dist[u] || visited[u] {
-            continue;
-        }
-
-        visited[u] = true;
-        let parent_vertex = if parent[u] != usize::MAX {
-            Some(parent[u])
-        } else {
-            None
-        };
-        vis_state.mark_visited(u, parent_vertex);
-
-        if u == end {
-            break;
-        }
-
-        for &(v, weight) in graph.neighbors(u) {
-            let edge_dist = (weight * SCALE) as u64;
-            let new_dist = dist[u].saturating_add(edge_dist);
-
-            if new_dist < dist[v] {
-                dist[v] = new_dist;
-                parent[v] = u;
-                heap.push(HeapEntry {
-                    dist: new_dist,
-                    vertex: v,
-                });
-                vis_state.mark_in_queue(v);
-            }
-        }
-
-        frames.push(vis_state.clone());
-    }
-
-    // Reconstruct path
-    let mut path = Vec::new();
-    if dist[end] < u64::MAX {
-        let mut current = end;
-        while current != usize::MAX {
-            path.push(current);
-            current = parent[current];
-        }
-        path.reverse();
-    }
-
-    vis_state.mark_path(&path);
-    for _ in 0..15 {
-        frames.push(vis_state.clone());
-    }
-
-    (frames, path)
-}
+const HOLD: usize = 15;
+const OUT: &str = "examples/gifs/dijkstra_euclid.gif";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let (graph, start, end) = euclidean_500();
+    let (g, start, end) = euclidean_500();
+    let n = g.n_vertices();
+    println!("graph: {} vertices, start={}, end={}", n, start, end);
 
-    println!(
-        "Graph: {} vertices, start={}, end={}",
-        graph.n_vertices(),
-        start,
-        end
-    );
+    let mut state = GraphVisState::new(&g, start, end);
+    let mut frames = vec![state.clone()];
+    let mut buf: SsspBuffers<f64, Dyn> = SsspBuffers::new_inf(Dyn(n));
 
-    println!("Running Dijkstra.");
-    let (frames, path) = dijkstra_visual(&graph, start, end);
-    let num_frames = frames.len();
-    let path_len = path.len().saturating_sub(1);
+    let mut algo: Dijkstra<f64> = Dijkstra::with_config(DijkstraConfig::with_target(end));
+    algo.run_observed(&g, start, &mut buf, |event| match event {
+        Event::Improved { vertex, .. } => state.mark_in_queue(vertex),
+        Event::Finalized { vertex, parent, .. } => {
+            state.mark_visited(vertex, parent);
+            frames.push(state.clone());
+        }
+        Event::Iteration(_) => {}
+    });
 
-    let width = GRAPH_WIDTH as u16;
-    let height = (GRAPH_HEIGHT + TITLE_HEIGHT) as u16;
-
-    let gif_path = "examples/gifs/dijkstra_euclid.gif";
-    let png_path = "examples/gifs/_temp_frame.png";
-
-    let mut encoder = setup_gif(gif_path, width, height)?;
-
-    for (i, frame) in frames.iter().enumerate() {
-        let title = if i < num_frames - 15 {
-            format!("Dijkstra: Step {}", i)
-        } else {
-            format!("Path: {} edges", path_len)
-        };
-
-        render_graph_frame(
-            png_path,
-            GraphRenderParams {
-                state: frame,
-                title: &title,
-            },
-        )?;
-
-        let gif_frame = png_to_gif_frame(png_path, width, height)?;
-        encoder.write_frame(&gif_frame)?;
+    let path = buf.path_to(end).unwrap_or_default();
+    state.mark_path(&path);
+    for _ in 0..HOLD {
+        frames.push(state.clone());
     }
 
-    fs::remove_file(png_path).ok();
-    println!("Saved to {}", gif_path);
-
+    let titles = make_titles(
+        frames.len(),
+        frames.len() - HOLD,
+        |i| format!("Dijkstra: step {}", i),
+        format!("Path: {} edges", path.len().saturating_sub(1)),
+    );
+    write_graph_gif(OUT, &frames, &titles)?;
+    println!("wrote {}", OUT);
     Ok(())
 }

@@ -10,7 +10,7 @@ use crate::utils::{FloatNumber, Graph, SsspBuffers};
 use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 
 /// One-shot A* with fn-pointer heuristic.
-pub fn cheeky_astar<T, N, G>(
+pub fn astar<T, N, G>(
     graph: &G,
     source: usize,
     target: usize,

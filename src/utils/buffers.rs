@@ -1,8 +1,5 @@
-use super::graph::FloatNumber;
+use super::graph::{FloatNumber, NO_VERTEX};
 use nalgebra::{DefaultAllocator, Dim, OVector, U1, allocator::Allocator};
-
-/// Sentinel: root or unreachable.
-pub const PARENT_NONE: usize = usize::MAX;
 
 /// SSSP buffers: distances + tree parents. Reuse via `reset_inf`.
 #[derive(Clone, Debug)]
@@ -25,25 +22,25 @@ where
     pub fn new_inf(n: N) -> Self {
         Self {
             dist: OVector::<T, N>::from_element_generic(n, U1, T::infinity()),
-            parent: OVector::<usize, N>::from_element_generic(n, U1, PARENT_NONE),
+            parent: OVector::<usize, N>::from_element_generic(n, U1, NO_VERTEX),
         }
     }
 
     pub fn reset_inf(&mut self) {
         self.dist.fill(T::infinity());
-        self.parent.fill(PARENT_NONE);
+        self.parent.fill(NO_VERTEX);
     }
 
     #[inline]
     pub fn set_source(&mut self, s: usize) {
         self.dist[s] = T::zero();
-        self.parent[s] = PARENT_NONE;
+        self.parent[s] = NO_VERTEX;
     }
 
     #[inline]
     pub fn parent_of(&self, v: usize) -> Option<usize> {
         let p = self.parent[v];
-        (p != PARENT_NONE).then_some(p)
+        (p != NO_VERTEX).then_some(p)
     }
 
     /// Path source -> v, or None if unreachable.
@@ -53,7 +50,7 @@ where
         }
         let mut path = Vec::new();
         let mut curr = v;
-        while curr != PARENT_NONE {
+        while curr != NO_VERTEX {
             path.push(curr);
             curr = self.parent[curr];
         }

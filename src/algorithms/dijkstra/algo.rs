@@ -1,6 +1,8 @@
 use crate::algorithms::HasSsspConfig;
 use crate::algorithms::heaps::{BinaryHeap, PriorityQueue};
-use crate::algorithms::{SsspAlgorithm, SsspAlgorithmInfo, SsspResult, finalize_sssp, init_sssp};
+use crate::algorithms::{
+    Event, SsspAlgorithm, SsspAlgorithmInfo, SsspResult, finalize_sssp, init_sssp,
+};
 use crate::utils::{FloatNumber, Graph, RelaxResult, SsspBuffers, relax_with};
 use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 use std::marker::PhantomData;
@@ -65,23 +67,45 @@ impl<T: FloatNumber, H: PriorityQueue<T>> SsspAlgorithmInfo for Dijkstra<T, H> {
     }
 }
 
-impl<T, N, G, H> SsspAlgorithm<T, N, G> for Dijkstra<T, H>
-where
-    T: FloatNumber,
-    N: Dim,
-    G: Graph<T>,
-    H: PriorityQueue<T>,
-    DefaultAllocator: Allocator<N>,
-{
-    fn run(&mut self, graph: &G, source: usize, buffers: &mut SsspBuffers<T, N>) -> SsspResult<T> {
-        debug_assert!(source < graph.n(), "Source vertex out of bounds");
+impl<T: FloatNumber, H: PriorityQueue<T>> Dijkstra<T, H> {
+    /// Multi-source primitive with observer; single-source = one-element slice.
+    pub fn run_from_observed<G, N, F>(
+        &mut self,
+        graph: &G,
+        sources: &[usize],
+        buffers: &mut SsspBuffers<T, N>,
+        mut observer: F,
+    ) -> SsspResult<T>
+    where
+        G: Graph<T>,
+        N: Dim,
+        DefaultAllocator: Allocator<N>,
+        F: FnMut(Event<T>),
+    {
+        debug_assert!(!sources.is_empty(), "at least one source required");
 
-        init_sssp(buffers, source);
+        init_sssp(buffers, sources);
         self.heap.clear();
-        self.heap.push(T::zero(), source);
+        for &s in sources {
+            debug_assert!(s < graph.n(), "source vertex out of bounds");
+            self.heap.push(T::zero(), s);
+        }
+
+        // Multi-target early-stop: O(1) membership via bool LUT + counter that
+        // breaks once every target is finalised. Zero cost when targets unset.
+        let targets = self.config.targets();
+        let mut remaining = targets.len();
+        let is_target: Vec<bool> = if remaining == 0 {
+            Vec::new()
+        } else {
+            let mut lut = vec![false; graph.n()];
+            for &t in targets {
+                lut[t] = true;
+            }
+            lut
+        };
 
         let mut iterations = 0usize;
-
         while let Some(entry) = self.heap.pop() {
             let u = entry.vertex;
             let d_u = entry.dist;
@@ -90,28 +114,85 @@ where
                 continue;
             }
 
-            if self.config.should_stop(u) {
-                break;
+            // Last target -> skip relaxation (no successors needed) and break.
+            let last_target = remaining > 0 && is_target[u] && {
+                remaining -= 1;
+                remaining == 0
+            };
+
+            if !last_target {
+                iterations += 1;
+                graph.for_each_out_edge(u, |v, w, _meta| {
+                    debug_assert!(w >= T::zero(), "Dijkstra requires non-negative weights");
+                    if let RelaxResult::Improved = relax_with(
+                        buffers.dist.as_mut_slice(),
+                        buffers.parent.as_mut_slice(),
+                        u,
+                        d_u,
+                        v,
+                        w,
+                    ) {
+                        let new_dist = buffers.dist[v];
+                        self.heap.push(new_dist, v);
+                        observer(Event::Improved {
+                            vertex: v,
+                            dist: new_dist,
+                            parent: u,
+                        });
+                    }
+                });
             }
 
-            iterations += 1;
-
-            graph.for_each_out_edge(u, |v, w, _meta| {
-                debug_assert!(w >= T::zero(), "Dijkstra requires non-negative weights");
-
-                if let RelaxResult::Improved = relax_with(
-                    buffers.dist.as_mut_slice(),
-                    buffers.parent.as_mut_slice(),
-                    u,
-                    d_u,
-                    v,
-                    w,
-                ) {
-                    self.heap.push(buffers.dist[v], v);
-                }
+            observer(Event::Finalized {
+                vertex: u,
+                dist: d_u,
+                parent: buffers.parent_of(u),
             });
+
+            if last_target {
+                break;
+            }
         }
 
         finalize_sssp(buffers, iterations, false)
+    }
+
+    /// Multi-source convenience: [`Self::run_from_observed`] without observer.
+    #[inline]
+    pub fn run_from<G, N>(
+        &mut self,
+        graph: &G,
+        sources: &[usize],
+        buffers: &mut SsspBuffers<T, N>,
+    ) -> SsspResult<T>
+    where
+        G: Graph<T>,
+        N: Dim,
+        DefaultAllocator: Allocator<N>,
+    {
+        self.run_from_observed(graph, sources, buffers, |_| {})
+    }
+}
+
+impl<T, N, G, H> SsspAlgorithm<T, N, G> for Dijkstra<T, H>
+where
+    T: FloatNumber,
+    N: Dim,
+    G: Graph<T>,
+    H: PriorityQueue<T>,
+    DefaultAllocator: Allocator<N>,
+{
+    #[inline]
+    fn run_observed<F>(
+        &mut self,
+        graph: &G,
+        source: usize,
+        buffers: &mut SsspBuffers<T, N>,
+        observer: F,
+    ) -> SsspResult<T>
+    where
+        F: FnMut(Event<T>),
+    {
+        self.run_from_observed(graph, std::slice::from_ref(&source), buffers, observer)
     }
 }

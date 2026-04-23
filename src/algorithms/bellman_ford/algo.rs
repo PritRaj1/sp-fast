@@ -1,4 +1,6 @@
-use crate::algorithms::{SsspAlgorithm, SsspAlgorithmInfo, SsspResult, finalize_sssp, init_sssp};
+use crate::algorithms::{
+    Event, SsspAlgorithm, SsspAlgorithmInfo, SsspResult, finalize_sssp, init_sssp,
+};
 use crate::utils::{FloatNumber, Graph, SsspBuffers};
 use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 use rayon::prelude::*;
@@ -6,33 +8,32 @@ use rayon::prelude::*;
 use super::config::BellmanFordConfig;
 
 /// Proposed relaxation: (target, new dist, parent).
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 struct Proposal<T: FloatNumber> {
     target: usize,
     dist: T,
     parent: usize,
 }
 
-/// Rayon-parallel Bellman-Ford. Handles negative weights, detects negative cycles.
-/// Propose-then-apply avoids concurrent writes during parallel relaxation.
+/// Rayon-parallel Bellman-Ford. Handles -ve weights, detects -ve cycles.
 #[derive(Debug)]
 pub struct BellmanFord<T: FloatNumber> {
     config: BellmanFordConfig,
-    _phantom: std::marker::PhantomData<T>,
+    best: Vec<Option<Proposal<T>>>, // Commit scratch, reused across rounds and runs.
 }
 
 impl<T: FloatNumber> BellmanFord<T> {
     pub fn new() -> Self {
         Self {
             config: BellmanFordConfig::default(),
-            _phantom: std::marker::PhantomData,
+            best: Vec::new(),
         }
     }
 
     pub fn with_config(config: BellmanFordConfig) -> Self {
         Self {
             config,
-            _phantom: std::marker::PhantomData,
+            best: Vec::new(),
         }
     }
 
@@ -61,6 +62,72 @@ impl<T: FloatNumber> SsspAlgorithmInfo for BellmanFord<T> {
     }
 }
 
+impl<T: FloatNumber> BellmanFord<T> {
+
+    /// Multi-source with observer.
+    pub fn run_from_observed<N, G, F>(
+        &mut self,
+        graph: &G,
+        sources: &[usize],
+        buffers: &mut SsspBuffers<T, N>,
+        mut observer: F,
+    ) -> SsspResult<T>
+    where
+        N: Dim,
+        G: Graph<T> + Sync,
+        G::Meta: Sync,
+        DefaultAllocator: Allocator<N>,
+        F: FnMut(Event<T>),
+    {
+        debug_assert!(!sources.is_empty(), "at least one source required");
+        for &s in sources {
+            debug_assert!(s < graph.n(), "source vertex out of bounds");
+        }
+        init_sssp(buffers, sources);
+
+        let n = graph.n();
+        self.best.clear();
+        self.best.resize(n, None);
+
+        let mut iterations = 0usize;
+        for round in 0..n.saturating_sub(1) {
+            iterations += 1;
+            let proposals = collect_proposals(graph, buffers);
+            self.best.fill(None);
+            let any_improved = apply_proposals(&mut self.best, buffers, &proposals, |p| {
+                observer(Event::Improved {
+                    vertex: p.target,
+                    dist: p.dist,
+                    parent: p.parent,
+                });
+            });
+            observer(Event::Iteration(round));
+            if self.config.early_termination && !any_improved {
+                break;
+            }
+        }
+
+        let negative_cycle = detect_negative_cycle(graph, buffers);
+        finalize_sssp(buffers, iterations, negative_cycle)
+    }
+
+    #[inline]
+    pub fn run_from<N, G>(
+        &mut self,
+        graph: &G,
+        sources: &[usize],
+        buffers: &mut SsspBuffers<T, N>,
+    ) -> SsspResult<T>
+    where
+        N: Dim,
+        G: Graph<T> + Sync,
+        G::Meta: Sync,
+        DefaultAllocator: Allocator<N>,
+    {
+        self.run_from_observed(graph, sources, buffers, |_| {})
+    }
+}
+
 impl<T, N, G> SsspAlgorithm<T, N, G> for BellmanFord<T>
 where
     T: FloatNumber,
@@ -69,27 +136,18 @@ where
     G::Meta: Sync,
     DefaultAllocator: Allocator<N>,
 {
-    fn run(&mut self, graph: &G, source: usize, buffers: &mut SsspBuffers<T, N>) -> SsspResult<T> {
-        debug_assert!(source < graph.n(), "Source vertex out of bounds");
-
-        init_sssp(buffers, source);
-
-        let n = graph.n();
-        let mut iterations = 0usize;
-
-        for _ in 0..n.saturating_sub(1) {
-            iterations += 1;
-            let proposals = collect_proposals(graph, buffers);
-            let any_improved = apply_proposals(buffers, &proposals);
-
-            if self.config.early_termination && !any_improved {
-                break;
-            }
-        }
-
-        let negative_cycle = detect_negative_cycle(graph, buffers);
-
-        finalize_sssp(buffers, iterations, negative_cycle)
+    #[inline]
+    fn run_observed<F>(
+        &mut self,
+        graph: &G,
+        source: usize,
+        buffers: &mut SsspBuffers<T, N>,
+        observer: F,
+    ) -> SsspResult<T>
+    where
+        F: FnMut(Event<T>),
+    {
+        self.run_from_observed(graph, std::slice::from_ref(&source), buffers, observer)
     }
 }
 
@@ -128,19 +186,22 @@ where
         .collect()
 }
 
-/// Take best proposal per target, commit. Returns true on any improvement.
-fn apply_proposals<T, N>(buffers: &mut SsspBuffers<T, N>, proposals: &[Proposal<T>]) -> bool
+/// Commit best proposal per target. `best` must be pre-sized to n, filled `None`.
+fn apply_proposals<T, N, F>(
+    best: &mut [Option<Proposal<T>>],
+    buffers: &mut SsspBuffers<T, N>,
+    proposals: &[Proposal<T>],
+    mut on_commit: F,
+) -> bool
 where
     T: FloatNumber,
     N: Dim,
     DefaultAllocator: Allocator<N>,
+    F: FnMut(&Proposal<T>),
 {
     if proposals.is_empty() {
         return false;
     }
-
-    let n = buffers.dist.len();
-    let mut best: Vec<Option<Proposal<T>>> = vec![None; n];
 
     for &prop in proposals {
         match &mut best[prop.target] {
@@ -155,12 +216,13 @@ where
     }
 
     let mut any_improved = false;
-    for (v, opt) in best.into_iter().enumerate() {
+    for (v, opt) in best.iter().copied().enumerate() {
         if let Some(prop) = opt
             && prop.dist < buffers.dist[v]
         {
             buffers.dist[v] = prop.dist;
             buffers.parent[v] = prop.parent;
+            on_commit(&prop);
             any_improved = true;
         }
     }

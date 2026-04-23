@@ -1,4 +1,4 @@
-use crate::algorithms::{ApspAlgorithm, ApspAlgorithmInfo, ApspResult};
+use crate::algorithms::{ApspAlgorithm, ApspAlgorithmInfo, ApspResult, Event};
 use crate::utils::{ApspBuffers, FloatNumber, Graph};
 use rayon::prelude::*;
 
@@ -57,13 +57,22 @@ where
     G: Graph<T> + Sync,
     G::Meta: Sync,
 {
-    fn run(&mut self, graph: &G, buffers: &mut ApspBuffers<T>) -> ApspResult<T> {
+    fn run_observed<F>(
+        &mut self,
+        graph: &G,
+        buffers: &mut ApspBuffers<T>,
+        mut observer: F,
+    ) -> ApspResult<T>
+    where
+        F: FnMut(Event<T>),
+    {
         let n = graph.n();
         debug_assert!(buffers.n == n, "Buffer size mismatch");
 
         init_from_graph(graph, buffers);
         for k in 0..n {
             update_for_k(buffers, k);
+            observer(Event::Iteration(k));
         }
 
         let negative_cycle = if self.config.detect_negative_cycle {

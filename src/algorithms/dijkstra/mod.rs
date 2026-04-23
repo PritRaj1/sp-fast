@@ -10,11 +10,7 @@ use crate::utils::{FloatNumber, Graph, SsspBuffers};
 use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 
 /// One-shot Dijkstra, no early stop.
-pub fn cheeky_dijkstra<T, N, G>(
-    graph: &G,
-    source: usize,
-    buffers: &mut SsspBuffers<T, N>,
-) -> SsspResult<T>
+pub fn dijkstra<T, N, G>(graph: &G, source: usize, buffers: &mut SsspBuffers<T, N>) -> SsspResult<T>
 where
     T: FloatNumber,
     N: Dim,
@@ -39,4 +35,19 @@ where
 {
     Dijkstra::<T, BinaryHeap<T>>::with_config(DijkstraConfig::with_target(target))
         .run(graph, source, buffers)
+}
+
+/// One-shot Dijkstra from many sources; each vertex gets distance to nearest source.
+pub fn dijkstra_multi<T, N, G>(
+    graph: &G,
+    sources: &[usize],
+    buffers: &mut SsspBuffers<T, N>,
+) -> SsspResult<T>
+where
+    T: FloatNumber,
+    N: Dim,
+    G: Graph<T>,
+    DefaultAllocator: Allocator<N>,
+{
+    Dijkstra::<T, BinaryHeap<T>>::new().run_from(graph, sources, buffers)
 }
