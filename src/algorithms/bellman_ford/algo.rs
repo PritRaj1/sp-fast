@@ -63,7 +63,6 @@ impl<T: FloatNumber> SsspAlgorithmInfo for BellmanFord<T> {
 }
 
 impl<T: FloatNumber> BellmanFord<T> {
-
     /// Multi-source with observer.
     pub fn run_from_observed<N, G, F>(
         &mut self,
