@@ -100,7 +100,6 @@ pub fn random_euclidean_graph_connected(
         graph.positions.push((rng.f64(), rng.f64()));
     }
 
-    // Pairwise euclidean metric
     let mut edges_added = vec![vec![false; n_vertices]; n_vertices];
 
     // Cross-symmetric writes to `edges_added` prevent iter_mut().enumerate().
@@ -127,7 +126,7 @@ pub fn random_euclidean_graph_connected(
         }
     }
 
-    // Add extra edges within radius (for more cobwebbiness).
+    // Extra edges within radius.
     #[allow(clippy::needless_range_loop)]
     for i in 0..n_vertices {
         for j in (i + 1)..n_vertices {

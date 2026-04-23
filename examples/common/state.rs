@@ -1,4 +1,4 @@
-/// Vertex/cell state for visuals (grids and graphs).
+/// Vertex state for visualisation.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum VertexState {
     Unvisited,
@@ -9,7 +9,7 @@ pub enum VertexState {
     End,
 }
 
-/// Edge state for graph visual.
+/// Edge state for graph visualisation.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum EdgeState {
     Default,
@@ -17,32 +17,7 @@ pub enum EdgeState {
     Path,
 }
 
-/// Grid-specific cell state (includes Wall).
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum CellState {
-    Wall,
-    Vertex(VertexState),
-}
-
-impl CellState {
-    pub fn unvisited() -> Self {
-        CellState::Vertex(VertexState::Unvisited)
-    }
-
-    pub fn is_unvisited(&self) -> bool {
-        matches!(self, CellState::Vertex(VertexState::Unvisited))
-    }
-
-    pub fn is_start(&self) -> bool {
-        matches!(self, CellState::Vertex(VertexState::Start))
-    }
-
-    pub fn is_end(&self) -> bool {
-        matches!(self, CellState::Vertex(VertexState::End))
-    }
-}
-
-/// Gradient interpolation factor from visit order.
+/// Visit-order `t` in [0, 1].
 pub fn visit_gradient_t(order: usize, max_order: usize) -> f32 {
     if max_order > 0 {
         (order as f32 / max_order as f32).min(1.0)
