@@ -1,16 +1,14 @@
-use crate::algorithms::{HasSsspConfig, SsspConfig};
-
-/// Dijkstra config. `lazy_deletion` = skip stale heap entries.
+/// Dijkstra config. `targets` enable multi-target early-stop;
 #[derive(Clone, Debug)]
 pub struct DijkstraConfig {
-    base: SsspConfig,
+    pub targets: Vec<usize>,
     pub lazy_deletion: bool,
 }
 
 impl Default for DijkstraConfig {
     fn default() -> Self {
         Self {
-            base: SsspConfig::default(),
+            targets: Vec::new(),
             lazy_deletion: true,
         }
     }
@@ -23,7 +21,7 @@ impl DijkstraConfig {
 
     pub fn with_targets(targets: Vec<usize>) -> Self {
         Self {
-            base: SsspConfig::with_targets(targets),
+            targets,
             lazy_deletion: true,
         }
     }
@@ -32,10 +30,13 @@ impl DijkstraConfig {
         self.lazy_deletion = false;
         self
     }
-}
 
-impl HasSsspConfig for DijkstraConfig {
-    fn sssp_config(&self) -> &SsspConfig {
-        &self.base
+    pub fn set_target(&mut self, target: usize) {
+        self.targets.clear();
+        self.targets.push(target);
+    }
+
+    pub fn set_targets(&mut self, targets: Vec<usize>) {
+        self.targets = targets;
     }
 }

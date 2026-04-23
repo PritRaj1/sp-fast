@@ -86,7 +86,6 @@ $$
 
 ```rust
 BellmanFordConfig {
-    base: SsspConfig,        // inherited (early_stop, etc.)
     early_termination: bool, // default: true - stop if no relaxations
 }
 ```

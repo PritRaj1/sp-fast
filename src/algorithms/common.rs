@@ -2,53 +2,6 @@ use crate::utils::{ApspBuffers, FloatNumber, Graph, MstBuffers, SsspBuffers};
 use nalgebra::{DefaultAllocator, Dim, allocator::Allocator};
 
 // =============================================================================
-// Config
-// =============================================================================
-
-/// Shared SSSP knobs.
-#[derive(Clone, Debug, Default)]
-pub struct SsspConfig {
-    /// Target vertices for Dijkstra multi-target early-stop; empty = no stop.
-    pub targets: Vec<usize>,
-}
-
-impl SsspConfig {
-    pub fn with_target(target: usize) -> Self {
-        Self::with_targets(vec![target])
-    }
-
-    pub fn with_targets(targets: Vec<usize>) -> Self {
-        Self { targets }
-    }
-
-    #[inline]
-    pub fn is_target(&self, vertex: usize) -> bool {
-        self.targets.contains(&vertex)
-    }
-}
-
-/// Exposes core SSSP knobs through any algorithm's config.
-pub trait HasSsspConfig {
-    fn sssp_config(&self) -> &SsspConfig;
-
-    #[inline]
-    fn targets(&self) -> &[usize] {
-        &self.sssp_config().targets
-    }
-
-    #[inline]
-    fn is_target(&self, vertex: usize) -> bool {
-        self.sssp_config().is_target(vertex)
-    }
-}
-
-impl HasSsspConfig for SsspConfig {
-    fn sssp_config(&self) -> &SsspConfig {
-        self
-    }
-}
-
-// =============================================================================
 // Results
 // =============================================================================
 

@@ -7,9 +7,7 @@ pub use algorithms::{
     AStar, AStarConfig, FnHeuristic, Heuristic, ZeroHeuristic, astar, astar_with,
 };
 pub use algorithms::{ApspAlgorithm, ApspAlgorithmInfo, ApspResult, Event};
-pub use algorithms::{
-    BellmanFord, BellmanFordConfig, bellman_ford, bellman_ford_multi, bellman_ford_to,
-};
+pub use algorithms::{BellmanFord, BellmanFordConfig, bellman_ford, bellman_ford_multi};
 pub use algorithms::{BinaryHeap, HeapEntry, PairingHeap, PriorityQueue};
 pub use algorithms::{Dijkstra, DijkstraConfig, dijkstra, dijkstra_multi, dijkstra_to};
 pub use algorithms::{FloydWarshall, FloydWarshallConfig, floyd_warshall};

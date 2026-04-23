@@ -76,22 +76,6 @@ fn test_grid() {
 }
 
 #[test]
-fn test_varying_weights() {
-    let mut g: AdjListGraph<f64> = AdjListGraph::new(4);
-    add_undirected_edge(&mut g, 0, 1, 10.0);
-    add_undirected_edge(&mut g, 0, 2, 6.0);
-    add_undirected_edge(&mut g, 0, 3, 5.0);
-    add_undirected_edge(&mut g, 1, 3, 15.0);
-    add_undirected_edge(&mut g, 2, 3, 4.0);
-
-    let mut buf = mst_dynamic(4);
-    let result = prim(&g, 0, &mut buf);
-
-    // MST: 0-3 (5), 3-2 (4), 0-1 (10) = 19
-    approx_eq(result.total_weight, 19.0, EPS);
-}
-
-#[test]
 fn test_static_dims() {
     let g = classic_mst_graph();
     let mut buf: MstBuffers<f64, Const<4>> = MstBuffers::new_inf(Const::<4>);

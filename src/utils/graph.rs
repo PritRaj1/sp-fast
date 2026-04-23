@@ -23,12 +23,6 @@ impl<T: FloatNumber> Edge<T, ()> {
     }
 }
 
-impl<T: FloatNumber, M> Edge<T, M> {
-    pub fn with_meta(to: usize, w: T, meta: M) -> Self {
-        Self { to, w, meta }
-    }
-}
-
 /// Read-only graph. Out-edges expose weight `T` and payload `Self::Meta`.
 pub trait Graph<T: FloatNumber> {
     type Meta;

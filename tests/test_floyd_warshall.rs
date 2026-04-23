@@ -1,7 +1,7 @@
 mod common;
 
 use common::{assertions::EPS_F64 as EPS, *};
-use sssp_fast::{AdjListGraph, ApspAlgorithm};
+use sssp_fast::AdjListGraph;
 
 #[test]
 fn test_shortest_paths() {
@@ -65,10 +65,7 @@ fn test_negative_cycle() {
     g.add_edge(2, 0, -3.0);
 
     let mut buf = apsp(3);
-    let result = sssp_fast::FloydWarshall::<f64>::with_config(sssp_fast::FloydWarshallConfig {
-        detect_negative_cycle: true,
-    })
-    .run(&g, &mut buf);
+    let result = floyd_warshall(&g, &mut buf);
 
     assert!(result.negative_cycle);
 }

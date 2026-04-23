@@ -1,4 +1,3 @@
-use crate::algorithms::HasSsspConfig;
 use crate::algorithms::heaps::{BinaryHeap, PriorityQueue};
 use crate::algorithms::{
     Event, SsspAlgorithm, SsspAlgorithmInfo, SsspResult, finalize_sssp, init_sssp,
@@ -9,7 +8,7 @@ use std::marker::PhantomData;
 
 use super::config::DijkstraConfig;
 
-/// Dijkstra SSSP. Non-negative weights. Pluggable priority queue.
+/// Dijkstra SSSP. +ve weights. Pluggable priority queue.
 #[derive(Debug)]
 pub struct Dijkstra<T: FloatNumber, H: PriorityQueue<T> = BinaryHeap<T>> {
     config: DijkstraConfig,
@@ -68,18 +67,22 @@ impl<T: FloatNumber, H: PriorityQueue<T>> SsspAlgorithmInfo for Dijkstra<T, H> {
 }
 
 impl<T: FloatNumber, H: PriorityQueue<T>> Dijkstra<T, H> {
-    /// Multi-source primitive with observer; single-source = one-element slice.
-    pub fn run_from_observed<G, N, F>(
+    /// Multi-source primitive. `weight_fn` maps (stored weight, meta) -> weight
+    /// used for relaxation: identity for plain Dijkstra, congestion inflation
+    /// for capacity-aware routing.
+    pub fn run_from_weighted_observed<G, N, W, F>(
         &mut self,
         graph: &G,
         sources: &[usize],
         buffers: &mut SsspBuffers<T, N>,
+        weight_fn: W,
         mut observer: F,
     ) -> SsspResult<T>
     where
         G: Graph<T>,
         N: Dim,
         DefaultAllocator: Allocator<N>,
+        W: Fn(T, &G::Meta) -> T,
         F: FnMut(Event<T>),
     {
         debug_assert!(!sources.is_empty(), "at least one source required");
@@ -93,7 +96,7 @@ impl<T: FloatNumber, H: PriorityQueue<T>> Dijkstra<T, H> {
 
         // Multi-target early-stop: O(1) membership via bool LUT + counter that
         // breaks once every target is finalised. Zero cost when targets unset.
-        let targets = self.config.targets();
+        let targets = self.config.targets.as_slice();
         let mut remaining = targets.len();
         let is_target: Vec<bool> = if remaining == 0 {
             Vec::new()
@@ -122,7 +125,8 @@ impl<T: FloatNumber, H: PriorityQueue<T>> Dijkstra<T, H> {
 
             if !last_target {
                 iterations += 1;
-                graph.for_each_out_edge(u, |v, w, _meta| {
+                graph.for_each_out_edge(u, |v, w, meta| {
+                    let w = weight_fn(w, meta);
                     debug_assert!(w >= T::zero(), "Dijkstra requires non-negative weights");
                     if let RelaxResult::Improved = relax_with(
                         buffers.dist.as_mut_slice(),
@@ -157,7 +161,42 @@ impl<T: FloatNumber, H: PriorityQueue<T>> Dijkstra<T, H> {
         finalize_sssp(buffers, iterations, false)
     }
 
-    /// Multi-source convenience: [`Self::run_from_observed`] without observer.
+    /// Multi-source with observer.
+    #[inline]
+    pub fn run_from_observed<G, N, F>(
+        &mut self,
+        graph: &G,
+        sources: &[usize],
+        buffers: &mut SsspBuffers<T, N>,
+        observer: F,
+    ) -> SsspResult<T>
+    where
+        G: Graph<T>,
+        N: Dim,
+        DefaultAllocator: Allocator<N>,
+        F: FnMut(Event<T>),
+    {
+        self.run_from_weighted_observed(graph, sources, buffers, |w, _| w, observer)
+    }
+
+    /// Multi-source with per-edge weight transform (meta-aware weighting).
+    #[inline]
+    pub fn run_from_weighted<G, N, W>(
+        &mut self,
+        graph: &G,
+        sources: &[usize],
+        buffers: &mut SsspBuffers<T, N>,
+        weight_fn: W,
+    ) -> SsspResult<T>
+    where
+        G: Graph<T>,
+        N: Dim,
+        DefaultAllocator: Allocator<N>,
+        W: Fn(T, &G::Meta) -> T,
+    {
+        self.run_from_weighted_observed(graph, sources, buffers, weight_fn, |_| {})
+    }
+
     #[inline]
     pub fn run_from<G, N>(
         &mut self,
@@ -170,7 +209,7 @@ impl<T: FloatNumber, H: PriorityQueue<T>> Dijkstra<T, H> {
         N: Dim,
         DefaultAllocator: Allocator<N>,
     {
-        self.run_from_observed(graph, sources, buffers, |_| {})
+        self.run_from_weighted_observed(graph, sources, buffers, |w, _| w, |_| {})
     }
 }
 

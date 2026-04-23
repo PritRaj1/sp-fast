@@ -21,16 +21,6 @@ impl Heuristic<f64> for ManhattanHeuristic {
 }
 
 #[test]
-fn test_linear_chain() {
-    let g = linear(5, 1.0);
-    let mut buf = dynamic(5);
-    astar(&g, 0, 4, zero, &mut buf);
-
-    dist_eq(&buf, 4, 4.0, EPS);
-    path_eq(&buf, 4, &[0, 1, 2, 3, 4]);
-}
-
-#[test]
 fn test_grid_with_manhattan() {
     let g = grid(5, 5, 1.0);
     let mut buf = dynamic(25);

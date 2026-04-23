@@ -7,9 +7,7 @@ pub mod heaps;
 pub mod prim;
 
 pub use astar::{AStar, AStarConfig, FnHeuristic, Heuristic, ZeroHeuristic, astar, astar_with};
-pub use bellman_ford::{
-    BellmanFord, BellmanFordConfig, bellman_ford, bellman_ford_multi, bellman_ford_to,
-};
+pub use bellman_ford::{BellmanFord, BellmanFordConfig, bellman_ford, bellman_ford_multi};
 pub use common::*;
 pub use dijkstra::{Dijkstra, DijkstraConfig, dijkstra, dijkstra_multi, dijkstra_to};
 pub use floyd_warshall::{FloydWarshall, FloydWarshallConfig, floyd_warshall};

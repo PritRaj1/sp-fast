@@ -51,16 +51,6 @@ impl<T: FloatNumber, Heur: Heuristic<T>, H: PriorityQueue<T>> AStar<T, Heur, H> 
     }
 }
 
-impl<T: FloatNumber, Heur: Heuristic<T> + Default> Default for AStar<T, Heur, BinaryHeap<T>> {
-    fn default() -> Self {
-        Self {
-            config: AStarConfig::default(),
-            heap: BinaryHeap::new(),
-            _phantom: PhantomData,
-        }
-    }
-}
-
 impl<T: FloatNumber, Heur: Heuristic<T>, H: PriorityQueue<T>> SsspAlgorithmInfo
     for AStar<T, Heur, H>
 {
@@ -94,7 +84,7 @@ where
     {
         debug_assert!(source < graph.n(), "Source vertex out of bounds");
 
-        let target = self.config.target().expect("A* requires a target vertex");
+        let target = self.config.target;
 
         init_sssp(buffers, slice::from_ref(&source));
         self.heap.clear();

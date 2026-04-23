@@ -70,7 +70,7 @@ Any shortest path $s \rightsquigarrow v$ through $u$ has length $\delta(s, u) + 
 
 ```rust
 DijkstraConfig {
-    base: SsspConfig,      // inherited (early_stop, etc.)
+    targets: Vec<usize>,   // empty = full scan; else multi-target early stop
     lazy_deletion: bool,   // default: true
 }
 ```

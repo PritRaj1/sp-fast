@@ -22,3 +22,9 @@ plotters = "0.3.7"
 gif = "0.13.1"
 image = "0.25.6"
 fastrand = "2.3"
+proptest = "1.6"
+criterion = "0.5"
+
+[[bench]]
+name = "heaps"
+harness = false
