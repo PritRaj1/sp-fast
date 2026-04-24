@@ -243,7 +243,11 @@ where
         (bar_x, bar_y - 26),
         font.clone(),
     ))?;
-    area.draw(&Text::new("0", (bar_x - 6, bar_y + bar_h + 6), font.clone()))?;
+    area.draw(&Text::new(
+        "0",
+        (bar_x - 6, bar_y + bar_h + 6),
+        font.clone(),
+    ))?;
     area.draw(&Text::new(
         format!("{heat_max}"),
         (bar_x + bar_w - 10, bar_y + bar_h + 6),
